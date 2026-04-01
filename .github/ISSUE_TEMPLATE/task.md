@@ -2,7 +2,7 @@
 name: Task
 about: 구현 작업, 설정 작업, 문서 작업, 리팩터링 작업을 기록합니다.
 title: "[Task] "
-labels: ["type:task", "status:ready"]
+labels: ["type:task"]
 assignees: ""
 ---
 

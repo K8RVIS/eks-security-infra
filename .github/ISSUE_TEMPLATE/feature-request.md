@@ -2,7 +2,7 @@
 name: Feature request
 about: 새로운 기능, 구성, 실습 흐름을 제안합니다.
 title: "[Feature] "
-labels: ["type:feature", "status:ready"]
+labels: ["type:feature"]
 assignees: ""
 ---
 

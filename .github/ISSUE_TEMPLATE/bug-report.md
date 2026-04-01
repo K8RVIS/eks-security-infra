@@ -2,7 +2,7 @@
 name: Bug report
 about: 동작 오류, 배포 실패, 설정 불일치 문제를 제보합니다.
 title: "[Bug] "
-labels: ["type:bug", "status:ready"]
+labels: ["type:bug"]
 assignees: ""
 ---
 
