@@ -7,9 +7,8 @@
 ### 이슈 작성 흐름
 1. 작업을 시작하기 전에 먼저 이슈를 만든다.
 2. 이슈 템플릿은 작업 성격에 맞게 `Feature request`, `Task`, `Bug report` 중 하나를 선택한다.
-3. 이슈에는 최소 1개의 `type:*` 라벨과 1개의 `area:*` 라벨을 붙인다.
-4. 우선순위가 분명한 작업은 `priority:*` 라벨을 추가한다.
-5. 브랜치는 이슈 번호를 포함해서 생성한다.
+3. 보안 성숙도 모델 작업 시 각 항목에 맞는 `area:*` 라벨과 `priority:*` 라벨을 붙인다.
+4. 브랜치는 이슈 번호를 포함해서 생성한다.
 
 ### 이슈 라벨 규칙
 
@@ -17,7 +16,6 @@
 - `type:*`: 파란 계열
 - `area:*`: 초록 계열
 - `priority:*`: 주황/빨강 계열
-- `status:*`: 보라 계열
 
 #### 타입 라벨
 - `type:feature`: 새로운 기능이나 사용자 가치가 있는 변경
@@ -32,18 +30,10 @@
 #### 우선순위 라벨
 - 해당 영역은 산출물의 "우선순위"가 지정되면 추가한다.
 
-#### 상태 라벨
-- `status:ready`: 작업 준비 완료
-- `status:in-progress`: 현재 작업 중
-- `status:blocked`: 외부 의존성이나 결정 대기 중
-- `status:review-needed`: 리뷰 또는 확인 필요
-
 ## 이슈 템플릿
 - `Feature request`: 새로운 모듈, 기능, 실습 흐름, GitOps 구성을 제안할 때 사용
 - `Task`: 구현 단계별 작업, 리팩터링, 문서 정리, 운영 작업을 나눌 때 사용
 - `Bug report`: Terraform apply 실패, 리소스 생성 오류, 잘못된 권한 설정, 배포 실패 같은 문제를 기록할 때 사용
-
-템플릿 파일은 [`.github/ISSUE_TEMPLATE/feature-request.md`](/Users/esc/Desktop/K8RVIS/eks-security-infra/.github/ISSUE_TEMPLATE/feature-request.md), [`.github/ISSUE_TEMPLATE/task.md`](/Users/esc/Desktop/K8RVIS/eks-security-infra/.github/ISSUE_TEMPLATE/task.md), [`.github/ISSUE_TEMPLATE/bug-report.md`](/Users/esc/Desktop/K8RVIS/eks-security-infra/.github/ISSUE_TEMPLATE/bug-report.md) 에 있다.
 
 ## 브랜치 네이밍 규칙
 
@@ -72,8 +62,9 @@
 
 ## 추천 작업 순서
 1. 이슈 생성
-2. 라벨 지정
-3. 브랜치 생성
-4. 작업 진행
-5. PR 생성 후 리뷰 요청
+2. 라벨 및 프로젝트 지정
+3. 작업 상황 업데이트 및 시작일, 마감일 작성
+4. 브랜치 생성
+5. 작업 진행
+6. PR 생성 후 리뷰 요청
 
