@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db
+  labels:
+    app.kubernetes.io/name: db
+    training.k8rvis.io/security-baseline: insecure
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: db
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: db
+        training.k8rvis.io/security-baseline: insecure
+    spec:
+      containers:
+        - name: db
+          image: redis:7
+          command:
+            - /bin/sh
+            - -c
+          args:
+            - redis-server --requirepass "$REDIS_PASSWORD"
+          env:
+            - name: REDIS_PASSWORD
+              value: training-password
+          ports:
+            - containerPort: 6379
+              name: redis
