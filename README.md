@@ -2,6 +2,25 @@
 
 비용 최적화형 EKS 보안 실습 환경을 Terraform과 GitOps 기반으로 구성하기 위한 인프라 레포지토리
 
+## 추천 작업 순서
+1. 이슈 생성
+2. 라벨 및 프로젝트 지정
+3. 작업 상황 업데이트 및 시작일, 마감일 작성
+4. 브랜치 생성
+5. 작업 진행
+6. PR 생성 후 리뷰 요청
+
+## 저장소 구조
+- `bootstrap/`: Terraform 원격 상태 저장용 S3 버킷을 생성하는 영구 스택
+- `environments/dev/`: 실습 때마다 생성하고 삭제하는 개발 환경 루트 스택
+- `modules/`: VPC, EKS, 애드온, ArgoCD, namespace 정책을 단계적으로 쌓는 재사용 모듈
+- `manifests/`: 샘플 워크로드와 팀별 GitOps 매니페스트
+- `scripts/`: 클러스터 생성, 삭제, kubeconfig 설정 자동화 스크립트
+
+## 생명주기 원칙
+- `bootstrap`은 장기 유지하는 영구 인프라다.
+- `environments/dev`는 실습 목적에 맞춰 반복 생성과 삭제를 전제로 한다.
+
 ## 협업 규칙
 
 ### 이슈 작성 흐름
@@ -59,12 +78,3 @@
 - `feat/issue-12-eks-spot-node-group`
 - `fix/issue-18-argocd-sync-timeout`
 - `docs/issue-3-readme-collaboration-guide`
-
-## 추천 작업 순서
-1. 이슈 생성
-2. 라벨 및 프로젝트 지정
-3. 작업 상황 업데이트 및 시작일, 마감일 작성
-4. 브랜치 생성
-5. 작업 진행
-6. PR 생성 후 리뷰 요청
-
