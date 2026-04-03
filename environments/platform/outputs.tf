@@ -37,3 +37,28 @@ output "ingress_service_name" {
   description = "Service name exposed by ingress-nginx."
   value       = module.k8s_base.ingress_service_name
 }
+
+output "team_namespace_names" {
+  description = "Created team namespace names."
+  value       = module.namespaces.namespace_names
+}
+
+output "argocd_release_name" {
+  description = "Helm release name for ArgoCD."
+  value       = module.argocd.release_name
+}
+
+output "argocd_namespace" {
+  description = "Namespace where ArgoCD is deployed."
+  value       = module.argocd.namespace
+}
+
+output "argocd_server_service_name" {
+  description = "Service name exposed by the ArgoCD server."
+  value       = module.argocd.argocd_server_service_name
+}
+
+output "argocd_application_names" {
+  description = "Generated team ArgoCD application names."
+  value       = module.argocd.application_names
+}
