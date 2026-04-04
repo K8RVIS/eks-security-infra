@@ -12,3 +12,16 @@ module "vpc" {
   fck_nat_instance_type = var.fck_nat_instance_type
   default_tags          = var.default_tags
 }
+
+module "eks" {
+  source = "../../modules/eks"
+
+  project_name       = var.project_name
+  environment        = var.environment
+  owner              = var.owner
+  private_subnet_ids = module.vpc.private_subnet_ids
+  kubernetes_version = var.kubernetes_version
+  node_ami_type      = var.node_ami_type
+  node_group         = var.node_group
+  default_tags       = var.default_tags
+}

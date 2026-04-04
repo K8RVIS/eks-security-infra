@@ -26,3 +26,15 @@ default_tags = {
   Repository = "eks-security-infra"
   ManagedBy  = "terraform"
 }
+
+kubernetes_version = "1.34"
+
+node_ami_type = "AL2023_ARM_64_STANDARD"
+
+node_group = {
+  instance_types = ["t4g.medium"]
+  desired_size   = 2
+  min_size       = 1
+  max_size       = 3
+  disk_size_gb   = 20
+}

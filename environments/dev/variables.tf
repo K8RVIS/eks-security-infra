@@ -49,3 +49,34 @@ variable "default_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "kubernetes_version" {
+  description = "Kubernetes version for the dev EKS cluster."
+  type        = string
+  default     = "1.34"
+}
+
+variable "node_ami_type" {
+  description = "AMI type for the default dev EKS managed node group."
+  type        = string
+  default     = "AL2023_ARM_64_STANDARD"
+}
+
+variable "node_group" {
+  description = "Configuration for the default EKS managed node group."
+  type = object({
+    instance_types = list(string)
+    desired_size   = number
+    min_size       = number
+    max_size       = number
+    disk_size_gb   = number
+  })
+
+  default = {
+    instance_types = ["t4g.medium"]
+    desired_size   = 2
+    min_size       = 1
+    max_size       = 3
+    disk_size_gb   = 20
+  }
+}
