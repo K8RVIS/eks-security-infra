@@ -2,6 +2,46 @@
 
 비용 최적화형 EKS 보안 실습 환경을 Terraform과 GitOps 기반으로 구성하기 위한 인프라 레포지토리
 
+## 아키텍처
+
+![EKS Security Infra Architecture](docs/architecture/architecture.png)
+
+### 레이어 구성
+
+| 레이어 | 경로 | 설명 |
+|---|---|---|
+| Bootstrap | `bootstrap/` | Terraform 원격 상태(S3) + GitHub Actions OIDC Provider — 영구 유지 |
+| Infra | `environments/infra/` | VPC, fck-nat, EKS 클러스터, IAM Role |
+| Platform | `environments/platform/` | Helm 애드온, 팀 네임스페이스, ArgoCD GitOps |
+
+### 주요 컴포넌트
+
+**Bootstrap**
+- S3 버킷 — Terraform state 저장 (버전관리 + AES256 암호화, 퍼블릭 액세스 차단)
+- IAM OIDC Provider — GitHub Actions 무비밀키 인증
+
+**Infra (AWS)**
+- VPC — 퍼블릭/프라이빗 서브넷 멀티 AZ 구성
+- Internet Gateway — 퍼블릭 서브넷 인터넷 연결
+- fck-nat — Spot EC2 기반 비용 최적화형 NAT (Managed NAT Gateway 대비 ~90% 비용 절감)
+- EKS Control Plane — private + public endpoint, 프라이빗 서브넷 배치
+- Node Group — Spot 인스턴스, gp3 암호화 볼륨, IMDSv2 강제 적용
+- IAM Role — EKS Cluster Role / Node Role (최소 권한 원칙)
+
+**Platform (Kubernetes)**
+- Metrics Server — 리소스 사용량 수집 (HPA 기반)
+- AWS Node Termination Handler — Spot 중단 이벤트 사전 대응 (드레인 처리)
+- Ingress NGINX — internet-facing NLB 연동 인그레스 컨트롤러
+- ArgoCD — GitOps 기반 지속 배포 엔진
+- ArgoCD Apps — 팀별 Application 자동 생성 (팀 레포 → 팀 네임스페이스 동기화)
+- Team Namespaces — 팀별 격리 네임스페이스 (`training.k8rvis.io/team` 라벨)
+
+### 실행 순서
+
+```
+bootstrap → infra → platform
+```
+
 ## 추천 작업 순서
 1. 이슈 생성
 2. 라벨 및 프로젝트 지정
@@ -11,15 +51,18 @@
 6. PR 생성 후 리뷰 요청
 
 ## 저장소 구조
-- `bootstrap/`: Terraform 원격 상태 저장용 S3 버킷을 생성하는 영구 스택
-- `environments/dev/`: 실습 때마다 생성하고 삭제하는 개발 환경 루트 스택
+- `bootstrap/`: Terraform 원격 상태 저장소와 장기 유지형 인증 기반을 생성하는 영구 스택
+- `environments/infra/`: VPC, NAT, EKS 같은 AWS 인프라 계층 루트 스택
+- `environments/platform/`: Helm/Kubernetes 기반 공통 애드온과 클러스터 내부 리소스 계층 루트 스택
 - `modules/`: VPC, EKS, 애드온, ArgoCD, namespace 정책을 단계적으로 쌓는 재사용 모듈
 - `manifests/`: 샘플 워크로드와 팀별 GitOps 매니페스트
 - `scripts/`: 클러스터 생성, 삭제, kubeconfig 설정 자동화 스크립트
 
 ## 생명주기 원칙
 - `bootstrap`은 장기 유지하는 영구 인프라다.
-- `environments/dev`는 실습 목적에 맞춰 반복 생성과 삭제를 전제로 한다.
+- `environments/infra`는 AWS 인프라 계층을 관리한다.
+- `environments/platform`은 클러스터 내부 플랫폼 계층을 관리한다.
+- 실행 순서는 `bootstrap -> infra -> platform`을 기본으로 한다.
 
 ## 협업 규칙
 
