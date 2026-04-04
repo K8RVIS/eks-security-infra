@@ -24,3 +24,28 @@ module "k8s_base" {
   ingress_nginx_namespace                    = var.ingress_nginx_namespace
   ingress_nginx_chart_version                = var.ingress_nginx_chart_version
 }
+
+module "namespaces" {
+  source = "../../modules/namespaces"
+
+  project_name = var.project_name
+  team_names   = var.team_names
+
+  depends_on = [module.k8s_base]
+}
+
+module "argocd" {
+  source = "../../modules/argocd"
+
+  helm_release_timeout_seconds  = var.helm_release_timeout_seconds
+  argocd_namespace              = var.argocd_namespace
+  argocd_chart_version          = var.argocd_chart_version
+  argocd_apps_chart_version     = var.argocd_apps_chart_version
+  argocd_project_name           = var.argocd_project_name
+  gitops_repo_url               = var.gitops_repo_url
+  gitops_target_revision        = var.gitops_target_revision
+  gitops_applications_base_path = var.gitops_applications_base_path
+  team_names                    = var.team_names
+
+  depends_on = [module.k8s_base, module.namespaces]
+}
