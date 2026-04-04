@@ -6,3 +6,6 @@ aws_region   = "ap-northeast-2"
 infra_state_bucket_name = "eks-security-infra-tfstate-example"
 infra_state_key         = "infra/terraform.tfstate"
 infra_state_region      = "ap-northeast-2"
+
+metrics_server_chart_version = "3.13.0"
+ingress_nginx_chart_version  = "4.14.1"
