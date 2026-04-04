@@ -33,3 +33,15 @@ variable "default_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "github_oidc_url" {
+  description = "OIDC issuer URL for GitHub Actions."
+  type        = string
+  default     = "https://token.actions.githubusercontent.com"
+}
+
+variable "github_oidc_client_ids" {
+  description = "OIDC audiences allowed for the GitHub Actions provider."
+  type        = list(string)
+  default     = ["sts.amazonaws.com"]
+}

@@ -6,6 +6,12 @@ owner        = "K8RVIS"
 # Replace with a globally unique bucket name before running terraform apply.
 tfstate_bucket_name = "eks-security-infra-tfstate-example"
 
+github_oidc_url = "https://token.actions.githubusercontent.com"
+
+github_oidc_client_ids = [
+  "sts.amazonaws.com",
+]
+
 default_tags = {
   Repository = "eks-security-infra"
   ManagedBy  = "terraform"

@@ -62,3 +62,9 @@ resource "aws_s3_bucket_public_access_block" "tfstate" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
+resource "aws_iam_openid_connect_provider" "github_actions" {
+  url            = var.github_oidc_url
+  client_id_list = var.github_oidc_client_ids
+  tags           = local.common_tags
+}
