@@ -1,11 +1,12 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: db
   labels:
     app.kubernetes.io/name: db
     training.k8rvis.io/security-baseline: insecure
 spec:
+  serviceName: db
   replicas: 1
   selector:
     matchLabels:
@@ -23,10 +24,25 @@ spec:
             - /bin/sh
             - -c
           args:
-            - redis-server --requirepass "$REDIS_PASSWORD"
+            - redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
           env:
             - name: REDIS_PASSWORD
               value: training-password
           ports:
             - containerPort: 6379
               name: redis
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: redis-data
+        labels:
+          app.kubernetes.io/name: db
+          training.k8rvis.io/security-baseline: insecure
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
