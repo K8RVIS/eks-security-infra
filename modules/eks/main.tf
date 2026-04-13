@@ -101,7 +101,7 @@ resource "aws_eks_cluster" "this" {
   version  = var.kubernetes_version
 
   vpc_config {
-    subnet_ids              = var.private_subnet_ids
+    subnet_ids              = var.cluster_subnet_ids
     endpoint_private_access = true
     endpoint_public_access  = true
   }
@@ -175,7 +175,7 @@ resource "aws_eks_node_group" "this" {
   cluster_name    = aws_eks_cluster.this.name
   node_group_name = local.node_group_name
   node_role_arn   = aws_iam_role.node.arn
-  subnet_ids      = var.private_subnet_ids
+  subnet_ids      = var.node_subnet_ids
   version         = var.kubernetes_version
   ami_type        = var.node_ami_type
   capacity_type   = "SPOT"

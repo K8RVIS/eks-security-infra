@@ -12,7 +12,8 @@ variables {
   project_name       = "eks-security-infra"
   environment        = "dev"
   owner              = "K8RVIS"
-  private_subnet_ids = ["subnet-11111111", "subnet-22222222"]
+  cluster_subnet_ids = ["subnet-private-a", "subnet-private-b"]
+  node_subnet_ids    = ["subnet-public-a", "subnet-public-b"]
   kubernetes_version = "1.34"
   node_ami_type      = "AL2023_ARM_64_STANDARD"
 
@@ -44,8 +45,18 @@ run "plan_builds_minimal_eks_cluster" {
   }
 
   assert {
+    condition     = length(setsubtract(toset(aws_eks_cluster.this.vpc_config[0].subnet_ids), toset(var.cluster_subnet_ids))) == 0
+    error_message = "The EKS control plane must stay on the private cluster subnets."
+  }
+
+  assert {
     condition     = aws_eks_node_group.this.capacity_type == "SPOT"
     error_message = "Managed node group must use SPOT capacity for the cost-optimized lab environment."
+  }
+
+  assert {
+    condition     = length(setsubtract(toset(aws_eks_node_group.this.subnet_ids), toset(var.node_subnet_ids))) == 0
+    error_message = "The managed node group must use the configured node subnets."
   }
 
   assert {
