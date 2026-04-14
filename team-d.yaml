@@ -1,0 +1,190 @@
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: api
+    training.k8rvis.io/security-baseline: insecure
+  name: api
+  namespace: team-d
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: api
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: db
+    training.k8rvis.io/security-baseline: insecure
+  name: db
+  namespace: team-d
+spec:
+  clusterIP: None
+  ports:
+  - name: redis
+    port: 6379
+    targetPort: redis
+  selector:
+    app.kubernetes.io/name: db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/name: web
+    training.k8rvis.io/security-baseline: insecure
+  name: web
+  namespace: team-d
+spec:
+  ports:
+  - name: http
+    port: 80
+    targetPort: http
+  selector:
+    app.kubernetes.io/name: web
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: api
+    training.k8rvis.io/security-baseline: insecure
+  name: api
+  namespace: team-d
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: api
+        training.k8rvis.io/security-baseline: insecure
+    spec:
+      automountServiceAccountToken: true
+      containers:
+      - env:
+        - name: REDIS_URL
+          value: redis://:training-password@db:6379/0
+        - name: EXTERNAL_POSTGRES_HOST
+          value: reporting-db.training.local
+        - name: EXTERNAL_POSTGRES_PORT
+          value: "5432"
+        - name: EXTERNAL_POSTGRES_DATABASE
+          value: reporting
+        - name: EXTERNAL_POSTGRES_USER
+          value: training-api
+        - name: EXTERNAL_POSTGRES_PASSWORD
+          value: training-external-password
+        image: ealen/echo-server
+        name: api
+        ports:
+        - containerPort: 80
+          name: http
+      serviceAccountName: default
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/name: web
+    training.k8rvis.io/security-baseline: insecure
+  name: web
+  namespace: team-d
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: web
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: web
+        training.k8rvis.io/security-baseline: insecure
+    spec:
+      containers:
+      - image: nginx:1.27.5
+        name: web
+        ports:
+        - containerPort: 80
+          name: http
+        securityContext:
+          runAsNonRoot: false
+          runAsUser: 0
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app.kubernetes.io/name: db
+    training.k8rvis.io/security-baseline: insecure
+  name: db
+  namespace: team-d
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: db
+  serviceName: db
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: db
+        training.k8rvis.io/security-baseline: insecure
+    spec:
+      containers:
+      - args:
+        - redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
+        command:
+        - /bin/sh
+        - -c
+        env:
+        - name: REDIS_PASSWORD
+          value: training-password
+        image: redis:7
+        name: db
+        ports:
+        - containerPort: 6379
+          name: redis
+        volumeMounts:
+        - mountPath: /data
+          name: redis-data
+  volumeClaimTemplates:
+  - metadata:
+      labels:
+        app.kubernetes.io/name: db
+        training.k8rvis.io/security-baseline: insecure
+      name: redis-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  labels:
+    app.kubernetes.io/name: web
+    training.k8rvis.io/security-baseline: insecure
+  name: web
+  namespace: team-d
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: team-d.training.local
+    http:
+      paths:
+      - backend:
+          service:
+            name: web
+            port:
+              number: 80
+        path: /
+        pathType: Prefix

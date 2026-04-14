@@ -11,3 +11,7 @@ patches:
     target:
       kind: Ingress
       name: web
+  - path: sa-patch.yaml # 보안패치 추가한 파일
+    target:
+      kind: Deployment
+      name: api

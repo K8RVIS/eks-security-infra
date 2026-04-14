@@ -1,0 +1,8 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api # base에 정의된 deployment의 이름과 똑같아야 합니다
+spec:
+  template:
+    spec:
+      automountServiceAccountToken: false
