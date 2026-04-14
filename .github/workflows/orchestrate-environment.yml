@@ -1,0 +1,102 @@
+name: Orchestrate Environment
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Requested operation"
+        required: true
+        type: choice
+        options:
+          - start
+          - stop
+      slack_user_id:
+        description: "Slack user ID"
+        required: true
+        type: string
+      namespace:
+        description: "Namespace mapped to the Slack user"
+        required: true
+        type: string
+      request_id:
+        description: "Unique request identifier"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: environment-orchestration
+  cancel-in-progress: false
+
+jobs:
+  orchestrate:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      AWS_ROLE_TO_ASSUME: ${{ vars.AWS_ROLE_TO_ASSUME }}
+      TERRAFORM_STATE_BUCKET: ${{ vars.TERRAFORM_STATE_BUCKET }}
+      TERRAFORM_STATE_REGION: ${{ vars.TERRAFORM_STATE_REGION }}
+      INFRA_TERRAFORM_STATE_KEY: ${{ vars.INFRA_TERRAFORM_STATE_KEY }}
+      PLATFORM_TERRAFORM_STATE_KEY: ${{ vars.PLATFORM_TERRAFORM_STATE_KEY }}
+      PLATFORM_INFRA_STATE_BUCKET: ${{ vars.PLATFORM_INFRA_STATE_BUCKET }}
+      PLATFORM_INFRA_STATE_REGION: ${{ vars.PLATFORM_INFRA_STATE_REGION }}
+      ORCHESTRATION_STATE_BUCKET: ${{ vars.ORCHESTRATION_STATE_BUCKET }}
+      ORCHESTRATION_STATE_KEY: ${{ vars.ORCHESTRATION_STATE_KEY }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.11.4
+
+      - name: Install Python dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          python -m pip install boto3
+
+      - name: Validate orchestration configuration
+        run: |
+          set -euo pipefail
+
+          required_vars=(
+            AWS_REGION
+            AWS_ROLE_TO_ASSUME
+            TERRAFORM_STATE_BUCKET
+            ORCHESTRATION_STATE_BUCKET
+            ORCHESTRATION_STATE_KEY
+          )
+
+          for name in "${required_vars[@]}"; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::$name is required for orchestration."
+              exit 1
+            fi
+          done
+
+      - name: Configure AWS credentials with OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
+          role-session-name: github-actions-eks-orchestrator
+
+      - name: Run orchestration
+        run: |
+          set -euo pipefail
+          python scripts/manage_environment.py \
+            --operation "${{ github.event.inputs.operation }}" \
+            --slack-user-id "${{ github.event.inputs.slack_user_id }}" \
+            --namespace "${{ github.event.inputs.namespace }}" \
+            --request-id "${{ github.event.inputs.request_id }}"
