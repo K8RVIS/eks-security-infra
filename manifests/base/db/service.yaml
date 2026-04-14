@@ -6,6 +6,7 @@ metadata:
     app.kubernetes.io/name: db
     training.k8rvis.io/security-baseline: insecure
 spec:
+  clusterIP: None
   selector:
     app.kubernetes.io/name: db
   ports:

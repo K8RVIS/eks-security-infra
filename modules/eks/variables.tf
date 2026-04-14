@@ -13,13 +13,23 @@ variable "owner" {
   type        = string
 }
 
-variable "private_subnet_ids" {
-  description = "Private subnet IDs used by the EKS control plane and node group."
+variable "cluster_subnet_ids" {
+  description = "Subnet IDs used by the EKS control plane."
   type        = list(string)
 
   validation {
-    condition     = length(var.private_subnet_ids) >= 2
-    error_message = "At least two private subnets must be supplied for the EKS cluster."
+    condition     = length(var.cluster_subnet_ids) >= 2
+    error_message = "At least two subnets must be supplied for the EKS control plane."
+  }
+}
+
+variable "node_subnet_ids" {
+  description = "Subnet IDs used by the default managed node group."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.node_subnet_ids) >= 2
+    error_message = "At least two subnets must be supplied for the managed node group."
   }
 }
 

@@ -21,6 +21,19 @@ spec:
       containers:
         - name: api
           image: ealen/echo-server
+          env:
+            - name: REDIS_URL
+              value: redis://:training-password@db:6379/0
+            - name: EXTERNAL_POSTGRES_HOST
+              value: reporting-db.training.local
+            - name: EXTERNAL_POSTGRES_PORT
+              value: "5432"
+            - name: EXTERNAL_POSTGRES_DATABASE
+              value: reporting
+            - name: EXTERNAL_POSTGRES_USER
+              value: training-api
+            - name: EXTERNAL_POSTGRES_PASSWORD
+              value: training-external-password
           ports:
             - containerPort: 80
               name: http
