@@ -9,7 +9,7 @@ provider "aws" {
 }
 
 variables {
-  project_name       = "eks-security-infra"
+  project_name       = "eks-secure-infra"
   environment        = "dev"
   owner              = "K8RVIS"
   cluster_subnet_ids = ["subnet-private-a", "subnet-private-b"]
@@ -26,7 +26,7 @@ variables {
   }
 
   default_tags = {
-    Repository = "eks-security-infra"
+    Repository = "eks-secure-infra"
     ManagedBy  = "terraform"
   }
 }
@@ -35,7 +35,7 @@ run "plan_builds_minimal_eks_cluster" {
   command = plan
 
   assert {
-    condition     = aws_eks_cluster.this.name == "eks-security-infra-dev"
+    condition     = aws_eks_cluster.this.name == "eks-secure-infra-dev"
     error_message = "EKS cluster name must follow the project-environment naming convention."
   }
 

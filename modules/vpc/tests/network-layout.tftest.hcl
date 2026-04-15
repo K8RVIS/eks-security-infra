@@ -3,7 +3,7 @@ mock_provider "aws" {
 }
 
 variables {
-  project_name          = "eks-security-infra"
+  project_name          = "eks-secure-infra"
   environment           = "dev"
   aws_region            = "ap-northeast-2"
   owner                 = "K8RVIS"
@@ -13,7 +13,7 @@ variables {
   private_subnet_cidrs  = ["10.0.10.0/24", "10.0.20.0/24"]
   fck_nat_instance_type = "t4g.nano"
   default_tags = {
-    Repository = "eks-security-infra"
+    Repository = "eks-secure-infra"
     ManagedBy  = "terraform"
   }
 }

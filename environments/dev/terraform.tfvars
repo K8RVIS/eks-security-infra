@@ -1,4 +1,4 @@
-project_name = "eks-security-infra"
+project_name = "eks-secure-infra"
 environment  = "dev"
 aws_region   = "ap-northeast-2"
 owner        = "K8RVIS"
@@ -23,7 +23,7 @@ private_subnet_cidrs = [
 fck_nat_instance_type = "t4g.nano"
 
 default_tags = {
-  Repository = "eks-security-infra"
+  Repository = "eks-secure-infra"
   ManagedBy  = "terraform"
 }
 
