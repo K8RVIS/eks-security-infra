@@ -104,7 +104,7 @@ variable "argocd_project_name" {
 variable "gitops_repo_url" {
   description = "Git repository URL that ArgoCD applications will watch."
   type        = string
-  default     = "https://github.com/K8RVIS/eks-security-infra.git"
+  default     = "https://github.com/K8RVIS/eks-secure-infra.git"
 }
 
 variable "gitops_target_revision" {

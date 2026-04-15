@@ -3,7 +3,7 @@ mock_provider "kubernetes" {
 }
 
 variables {
-  project_name = "eks-security-infra"
+  project_name = "eks-secure-infra"
   team_names   = ["team-a", "team-b", "team-c", "team-d"]
 }
 
