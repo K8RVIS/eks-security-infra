@@ -20,9 +20,23 @@ spec:
         - name: web
           image: nginx:1.27.5
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: http
           securityContext:
             runAsNonRoot: true
             runAsUser: 1000
             readOnlyRootFilesystem: true
+          volumeMounts:
+            - name: tmp-volume
+              mountPath: /tmp
+            - name: cache-volume
+              mountPath: /var/cache/nginx
+            - name: run-volume
+              mountPath: /var/run
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+        - name: cache-volume
+          emptyDir: {}
+        - name: run-volume
+          emptyDir: {}
