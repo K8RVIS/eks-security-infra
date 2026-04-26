@@ -26,8 +26,6 @@ module "eks" {
   node_group         = var.node_group
   default_tags       = var.default_tags
 
-  cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
-
   authentication_mode = "API_AND_CONFIG_MAP"
   access_entries = {
     teamc_user = {

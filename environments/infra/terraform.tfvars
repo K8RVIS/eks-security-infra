@@ -38,5 +38,5 @@ node_group = {
   max_size       = 3
   disk_size_gb   = 20
 }
-cluster_endpoint_public_access_cidrs = ["61.73.75.80/32"]
+
 user_iam_arn= "arn:aws:iam::357542025037:role/aws-reserved/sso.amazonaws.com/ap-northeast-2/AWSReservedSSO_AdministratorAccess_3a39e04d118e4347"
