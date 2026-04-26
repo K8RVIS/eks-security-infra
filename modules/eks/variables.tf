@@ -79,3 +79,24 @@ variable "default_tags" {
   type        = map(string)
   default     = {}
 }
+variable "access_entries" {
+  description = "EKS cluster에 접속할 IAM user 및 권한 mapping"
+  type        = any
+  default     = {}
+}
+
+variable "authentication_mode" {
+  description = "EKS 클러스터 인증 모드"
+  type        = string
+  default     = "API_AND_CONFIG_MAP"
+}
+variable "cluster_endpoint_public_access" {
+  description = "EKS Public Endpoint 활성화 여부"
+  type        = bool
+  default     = true
+}
+variable "cluster_endpoint_public_access_cidrs" {
+  description = "EKS API 서버에 접근 허용할 CIDR 리스트"
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
+}
