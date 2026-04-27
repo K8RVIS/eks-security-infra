@@ -27,7 +27,10 @@ spec:
             - redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
           env:
             - name: REDIS_PASSWORD
-              value: training-password
+              valueFrom:
+                secretKeyRef:
+                  name: redis-pass
+                  key: password # 시크릿 내부에 설정한 키 이름
           ports:
             - containerPort: 6379
               name: redis
