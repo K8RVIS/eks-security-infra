@@ -20,6 +20,10 @@ private_subnet_cidrs = [
   "10.0.20.0/24",
 ]
 
+cluster_public_access_cidrs = [
+  "115.136.89.40/32",
+]
+
 fck_nat_instance_type = "t4g.nano"
 
 default_tags = {
