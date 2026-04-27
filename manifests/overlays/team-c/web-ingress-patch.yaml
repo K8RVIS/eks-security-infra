@@ -1,11 +1,27 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: web
+  name: ingress
+  namespace: team-c
+  annotations:
+    #  ALB 컨트롤러 사용 선언
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+
+    #  ACM 인증서 연결
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-northeast-2:357542025037:certificate/6e95b8cb-8e7a-44ac-a47d-be12cf7a413b
+
+    # 포트 설정
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+
+    #  HTTPS 강제
+    alb.ingress.kubernetes.io/ssl-redirect: "443"
+
+    # 보안 정책 (최신 TLS 버전만 허용)
+    alb.ingress.kubernetes.io/ssl-policy: ELBSecurityPolicy-TLS-1-2-2017-01
 spec:
   rules:
-    - host: team-c.training.local
-      http:
+    - http:
         paths:
           - path: /
             pathType: Prefix

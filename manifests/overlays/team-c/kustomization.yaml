@@ -11,3 +11,4 @@ patches:
     target:
       kind: Ingress
       name: web
+  - path: service-patch.yaml
