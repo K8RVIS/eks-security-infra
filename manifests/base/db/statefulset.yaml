@@ -17,6 +17,8 @@ spec:
         app.kubernetes.io/name: db
         training.k8rvis.io/security-baseline: insecure
     spec:
+      securityContext:
+        fsGroup: 999
       containers:
         - name: db
           image: redis:7
@@ -31,9 +33,19 @@ spec:
           ports:
             - containerPort: 6379
               name: redis
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
           volumeMounts:
             - name: redis-data
               mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: redis-data

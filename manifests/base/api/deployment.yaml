@@ -37,3 +37,8 @@ spec:
           ports:
             - containerPort: 80
               name: http
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
