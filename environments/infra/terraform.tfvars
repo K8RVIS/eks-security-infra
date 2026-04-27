@@ -38,3 +38,7 @@ node_group = {
   max_size       = 3
   disk_size_gb   = 20
 }
+
+cluster_endpoint_public_access_cidrs = [
+  "203.0.113.10/32", # 접근 허용할 CIDR 값 넣기
+]

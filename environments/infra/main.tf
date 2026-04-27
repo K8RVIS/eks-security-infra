@@ -25,4 +25,5 @@ module "eks" {
   node_ami_type      = var.node_ami_type
   node_group         = var.node_group
   default_tags       = var.default_tags
+  cluster_endpoint_public_access_cidrs = var.cluster_endpoint_public_access_cidrs
 }

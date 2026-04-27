@@ -79,3 +79,28 @@ variable "default_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "cluster_endpoint_public_access_cidrs" {
+  description = "CIDR blocks allowed to access the EKS public API endpoint."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.cluster_endpoint_public_access_cidrs) > 0
+    error_message = "At least one CIDR block must be supplied for the EKS public API endpoint."
+  }
+
+  validation {
+    condition = alltrue([
+      for cidr in var.cluster_endpoint_public_access_cidrs : can(cidrhost(cidr, 0))
+    ])
+    error_message = "Each EKS public API endpoint CIDR must be a valid CIDR block."
+  }
+
+  validation {
+    condition = alltrue([
+      for cidr in var.cluster_endpoint_public_access_cidrs :
+      !contains(["0.0.0.0/0", "::/0"], cidr)
+    ])
+    error_message = "Unrestricted access to the EKS public API endpoint is not allowed."
+  }
+}

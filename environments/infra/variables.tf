@@ -18,6 +18,11 @@ variable "owner" {
   type        = string
 }
 
+variable "cluster_endpoint_public_access_cidrs" {
+  description = "CIDR blocks allowed to access the EKS public API endpoint."
+  type        = list(string)
+}
+
 variable "vpc_cidr" {
   description = "CIDR block for the infra VPC."
   type        = string
