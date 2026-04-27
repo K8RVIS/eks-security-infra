@@ -2,9 +2,16 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: web
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
+  tls:
+  - hosts:
+      - team-a.terraform-study-esc.shop
+    secretName: team-a-web-tls
   rules:
-    - host: team-a.training.local
+    - host: team-a.terraform-study-esc.shop
       http:
         paths:
           - path: /

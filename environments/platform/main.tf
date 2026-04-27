@@ -23,6 +23,7 @@ module "k8s_base" {
   aws_node_termination_handler_chart_version = var.aws_node_termination_handler_chart_version
   ingress_nginx_namespace                    = var.ingress_nginx_namespace
   ingress_nginx_chart_version                = var.ingress_nginx_chart_version
+  ingress_lb_acm_certificate_arn             = var.ingress_lb_acm_certificate_arn
 }
 
 module "namespaces" {

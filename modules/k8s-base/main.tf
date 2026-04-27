@@ -62,6 +62,11 @@ resource "helm_release" "ingress_nginx" {
         type: LoadBalancer
         annotations:
           service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+          service.beta.kubernetes.io/aws-load-balancer-type: external
+          service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
+          service.beta.kubernetes.io/aws-load-balancer-ssl-cert: ${var.ingress_lb_acm_certificate_arn}
+          //service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "443"
+          service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy: ELBSecurityPolicy-TLS13-1-2-2021-06
     EOT
   ]
 }

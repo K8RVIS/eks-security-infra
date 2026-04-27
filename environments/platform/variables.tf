@@ -124,3 +124,8 @@ variable "team_names" {
   type        = list(string)
   default     = ["team-a", "team-b", "team-c", "team-d"]
 }
+
+variable "ingress_lb_acm_certificate_arn" {
+  description = "ACM certificate ARN used by the ingress-nginx AWS load balancer TLS listener."
+  type        = string
+}

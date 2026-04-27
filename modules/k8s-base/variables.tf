@@ -45,3 +45,8 @@ variable "ingress_nginx_chart_version" {
   type        = string
   default     = "4.14.1"
 }
+
+variable "ingress_lb_acm_certificate_arn" {
+  description = "ACM certificate ARN used by the ingress-nginx AWS load balancer TLS listener."
+  type        = string
+}
