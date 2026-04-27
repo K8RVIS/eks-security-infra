@@ -60,6 +60,11 @@ run "plan_deploys_argocd_and_team_applications" {
   }
 
   assert {
+    condition     = !strcontains(join("", helm_release.argocd_apps.values), "\"directory\"")
+    error_message = "Team applications must not force ArgoCD directory source mode for Kustomize overlays."
+  }
+
+  assert {
     condition     = output.argocd_server_service_name == "argocd-server"
     error_message = "The module must expose the ArgoCD server service name."
   }

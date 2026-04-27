@@ -7,9 +7,6 @@ locals {
         repoURL        = var.gitops_repo_url
         targetRevision = var.gitops_target_revision
         path           = "${var.gitops_applications_base_path}/${team_name}"
-        directory = {
-          recurse = true
-        }
       }
       destination = {
         server    = "https://kubernetes.default.svc"
