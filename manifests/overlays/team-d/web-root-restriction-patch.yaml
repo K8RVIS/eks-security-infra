@@ -1,0 +1,52 @@
+- op: replace
+  path: /metadata/labels/training.k8rvis.io~1security-baseline
+  value: restricted
+- op: replace
+  path: /spec/template/metadata/labels/training.k8rvis.io~1security-baseline
+  value: restricted
+- op: add
+  path: /spec/template/spec/securityContext
+  value:
+    runAsNonRoot: true
+    runAsUser: 101
+    runAsGroup: 101
+    fsGroup: 101
+    seccompProfile:
+      type: RuntimeDefault
+- op: replace
+  path: /spec/template/spec/containers/0/image
+  value: nginxinc/nginx-unprivileged:1.27
+- op: replace
+  path: /spec/template/spec/containers/0/ports
+  value:
+    - containerPort: 8080
+      name: http
+- op: replace
+  path: /spec/template/spec/containers/0/securityContext
+  value:
+    runAsNonRoot: true
+    runAsUser: 101
+    runAsGroup: 101
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: true
+    capabilities:
+      drop:
+        - ALL
+- op: add
+  path: /spec/template/spec/containers/0/volumeMounts
+  value:
+    - name: nginx-cache
+      mountPath: /var/cache/nginx
+    - name: nginx-run
+      mountPath: /var/run
+    - name: tmp
+      mountPath: /tmp
+- op: add
+  path: /spec/template/spec/volumes
+  value:
+    - name: nginx-cache
+      emptyDir: {}
+    - name: nginx-run
+      emptyDir: {}
+    - name: tmp
+      emptyDir: {}

@@ -11,3 +11,7 @@ patches:
     target:
       kind: Ingress
       name: web
+  - path: web-root-restriction-patch.yaml
+    target:
+      kind: Deployment
+      name: web
