@@ -93,6 +93,21 @@ resource "kubernetes_service_account_v1" "aws_load_balancer_controller" {
   }
 }
 
+resource "kubernetes_secret_v1" "external_dns_cloudflare" {
+  count = var.cloudflare_api_token == null ? 0 : 1
+
+  metadata {
+    name      = var.external_dns_cloudflare_api_token_secret_name
+    namespace = var.external_dns_namespace
+  }
+
+  data = {
+    api-token = var.cloudflare_api_token
+  }
+
+  type = "Opaque"
+}
+
 module "k8s_base" {
   source = "../../modules/k8s-base"
 
@@ -108,12 +123,20 @@ module "k8s_base" {
   aws_load_balancer_controller_namespace            = var.aws_load_balancer_controller_namespace
   aws_load_balancer_controller_service_account_name = var.aws_load_balancer_controller_service_account_name
   aws_load_balancer_controller_chart_version        = var.aws_load_balancer_controller_chart_version
+  external_dns_enabled                              = var.cloudflare_api_token != null
+  external_dns_namespace                            = var.external_dns_namespace
+  external_dns_chart_version                        = var.external_dns_chart_version
+  external_dns_domain_filters                       = var.external_dns_domain_filters
+  external_dns_txt_owner_id                         = var.external_dns_txt_owner_id
+  external_dns_policy                               = var.external_dns_policy
+  external_dns_cloudflare_api_token_secret_name     = var.external_dns_cloudflare_api_token_secret_name
   ingress_nginx_namespace                           = var.ingress_nginx_namespace
   ingress_nginx_chart_version                       = var.ingress_nginx_chart_version
 
   depends_on = [
     aws_iam_role_policy_attachment.aws_load_balancer_controller,
     kubernetes_service_account_v1.aws_load_balancer_controller,
+    kubernetes_secret_v1.external_dns_cloudflare,
   ]
 }
 

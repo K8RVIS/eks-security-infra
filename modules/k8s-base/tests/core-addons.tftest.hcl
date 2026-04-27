@@ -9,6 +9,9 @@ variables {
   aws_region                         = "ap-northeast-2"
   cluster_name                       = "eks-secure-infra-dev"
   vpc_id                             = "vpc-0123456789abcdef0"
+  external_dns_enabled               = true
+  external_dns_chart_version         = "1.20.0"
+  external_dns_domain_filters        = ["terraform-study-esc.shop"]
 }
 
 run "plan_deploys_core_addons" {
@@ -87,5 +90,40 @@ run "plan_deploys_core_addons" {
   assert {
     condition     = output.aws_load_balancer_controller_release_name == "aws-load-balancer-controller"
     error_message = "The module must expose the AWS Load Balancer Controller release name."
+  }
+
+  assert {
+    condition     = helm_release.external_dns[0].name == "external-dns"
+    error_message = "ExternalDNS release must use the expected release name."
+  }
+
+  assert {
+    condition     = helm_release.external_dns[0].repository == "https://kubernetes-sigs.github.io/external-dns/"
+    error_message = "ExternalDNS must use the official helm repository."
+  }
+
+  assert {
+    condition     = helm_release.external_dns[0].version == var.external_dns_chart_version
+    error_message = "ExternalDNS must pin the configured chart version."
+  }
+
+  assert {
+    condition     = strcontains(join("", helm_release.external_dns[0].values), "cloudflare")
+    error_message = "ExternalDNS values must configure the Cloudflare provider."
+  }
+
+  assert {
+    condition     = strcontains(join("", helm_release.external_dns[0].values), "terraform-study-esc.shop")
+    error_message = "ExternalDNS values must limit records to the expected domain."
+  }
+
+  assert {
+    condition     = strcontains(join("", helm_release.external_dns[0].values), "external-dns-cloudflare")
+    error_message = "ExternalDNS values must reference the Cloudflare API token secret."
+  }
+
+  assert {
+    condition     = output.external_dns_release_name == "external-dns"
+    error_message = "The module must expose the ExternalDNS release name when enabled."
   }
 }

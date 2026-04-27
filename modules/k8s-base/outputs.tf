@@ -18,6 +18,16 @@ output "aws_load_balancer_controller_namespace" {
   value       = helm_release.aws_load_balancer_controller.namespace
 }
 
+output "external_dns_release_name" {
+  description = "Helm release name for ExternalDNS, or null when disabled."
+  value       = try(helm_release.external_dns[0].name, null)
+}
+
+output "external_dns_namespace" {
+  description = "Namespace where ExternalDNS is deployed, or null when disabled."
+  value       = try(helm_release.external_dns[0].namespace, null)
+}
+
 output "ingress_release_name" {
   description = "Helm release name for ingress-nginx."
   value       = helm_release.ingress_nginx.name

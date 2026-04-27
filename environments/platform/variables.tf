@@ -89,6 +89,49 @@ variable "aws_load_balancer_controller_iam_policy_url" {
   default     = "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v3.2.2/docs/install/iam_policy.json"
 }
 
+variable "cloudflare_api_token" {
+  description = "Cloudflare API token used by ExternalDNS. Leave null to skip deploying ExternalDNS until the token is ready."
+  type        = string
+  default     = null
+  sensitive   = true
+}
+
+variable "external_dns_namespace" {
+  description = "Namespace used for the ExternalDNS release."
+  type        = string
+  default     = "kube-system"
+}
+
+variable "external_dns_chart_version" {
+  description = "Pinned chart version for ExternalDNS."
+  type        = string
+  default     = "1.20.0"
+}
+
+variable "external_dns_domain_filters" {
+  description = "Domain suffixes ExternalDNS is allowed to manage."
+  type        = list(string)
+  default     = ["terraform-study-esc.shop"]
+}
+
+variable "external_dns_txt_owner_id" {
+  description = "TXT registry owner ID used by ExternalDNS."
+  type        = string
+  default     = "eks-secure-infra-dev"
+}
+
+variable "external_dns_policy" {
+  description = "ExternalDNS synchronization policy."
+  type        = string
+  default     = "upsert-only"
+}
+
+variable "external_dns_cloudflare_api_token_secret_name" {
+  description = "Kubernetes Secret name that stores the Cloudflare API token for ExternalDNS."
+  type        = string
+  default     = "external-dns-cloudflare"
+}
+
 variable "ingress_nginx_namespace" {
   description = "Namespace used for the ingress-nginx release."
   type        = string

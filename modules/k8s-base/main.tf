@@ -54,6 +54,53 @@ resource "helm_release" "aws_load_balancer_controller" {
   ]
 }
 
+resource "helm_release" "external_dns" {
+  count = var.external_dns_enabled ? 1 : 0
+
+  name             = "external-dns"
+  namespace        = var.external_dns_namespace
+  create_namespace = false
+  repository       = "https://kubernetes-sigs.github.io/external-dns/"
+  chart            = "external-dns"
+  version          = var.external_dns_chart_version
+  timeout          = var.helm_release_timeout_seconds
+  atomic           = true
+  cleanup_on_fail  = true
+  wait             = true
+
+  values = [
+    yamlencode({
+      provider = {
+        name = "cloudflare"
+      }
+
+      sources = ["ingress"]
+
+      domainFilters = var.external_dns_domain_filters
+
+      policy     = var.external_dns_policy
+      registry   = "txt"
+      txtOwnerId = var.external_dns_txt_owner_id
+
+      env = [
+        {
+          name = "CF_API_TOKEN"
+          valueFrom = {
+            secretKeyRef = {
+              name = var.external_dns_cloudflare_api_token_secret_name
+              key  = "api-token"
+            }
+          }
+        }
+      ]
+
+      extraArgs = {
+        cloudflare-dns-records-per-page = "5000"
+      }
+    })
+  ]
+}
+
 resource "helm_release" "aws_node_termination_handler" {
   name             = "aws-node-termination-handler"
   namespace        = var.aws_node_termination_handler_namespace

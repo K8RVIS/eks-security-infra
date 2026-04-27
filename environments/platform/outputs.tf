@@ -33,6 +33,16 @@ output "aws_load_balancer_controller_role_arn" {
   value       = aws_iam_role.aws_load_balancer_controller.arn
 }
 
+output "external_dns_release_name" {
+  description = "Helm release name for ExternalDNS, or null when Cloudflare token is not configured."
+  value       = module.k8s_base.external_dns_release_name
+}
+
+output "external_dns_namespace" {
+  description = "Namespace where ExternalDNS is deployed, or null when Cloudflare token is not configured."
+  value       = module.k8s_base.external_dns_namespace
+}
+
 output "ingress_release_name" {
   description = "Helm release name for ingress-nginx."
   value       = module.k8s_base.ingress_release_name
