@@ -77,6 +77,11 @@ variable "ingress_nginx_chart_version" {
   default     = "4.14.1"
 }
 
+variable "acm_certificate_arn" {
+  description = "ARN of the ACM certificate to attach to the ingress-nginx NLB for HTTPS termination."
+  type        = string
+}
+
 variable "argocd_namespace" {
   description = "Namespace used for the ArgoCD installation."
   type        = string
