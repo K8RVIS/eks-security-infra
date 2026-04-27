@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    helm = {
+      source  = "hashicorp/helm"
+      version = "~> 2.0"
+    }
+  }
+}
+
 resource "helm_release" "metrics_server" {
   name             = "metrics-server"
   namespace        = var.metrics_server_namespace
@@ -16,6 +25,31 @@ resource "helm_release" "metrics_server" {
         "--kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname",
         "--kubelet-insecure-tls",
       ]
+    })
+  ]
+}
+
+resource "helm_release" "aws_load_balancer_controller" {
+  name             = "aws-load-balancer-controller"
+  namespace        = var.aws_load_balancer_controller_namespace
+  create_namespace = false
+  repository       = "https://aws.github.io/eks-charts"
+  chart            = "aws-load-balancer-controller"
+  version          = var.aws_load_balancer_controller_chart_version
+  timeout          = var.helm_release_timeout_seconds
+  atomic           = true
+  cleanup_on_fail  = true
+  wait             = true
+
+  values = [
+    yamlencode({
+      clusterName = var.cluster_name
+      region      = var.aws_region
+      vpcId       = var.vpc_id
+      serviceAccount = {
+        create = false
+        name   = var.aws_load_balancer_controller_service_account_name
+      }
     })
   ]
 }
