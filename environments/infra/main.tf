@@ -19,10 +19,11 @@ module "eks" {
   project_name       = var.project_name
   environment        = var.environment
   owner              = var.owner
-  cluster_subnet_ids = module.vpc.private_subnet_ids
-  node_subnet_ids    = module.vpc.public_subnet_ids
-  kubernetes_version = var.kubernetes_version
-  node_ami_type      = var.node_ami_type
-  node_group         = var.node_group
-  default_tags       = var.default_tags
+  cluster_subnet_ids  = module.vpc.private_subnet_ids
+  node_subnet_ids     = module.vpc.public_subnet_ids
+  kubernetes_version  = var.kubernetes_version
+  node_ami_type       = var.node_ami_type
+  node_group          = var.node_group
+  public_access_cidrs = var.public_access_cidrs
+  default_tags        = var.default_tags
 }

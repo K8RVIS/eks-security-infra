@@ -62,6 +62,11 @@ variable "node_ami_type" {
   default     = "AL2023_ARM_64_STANDARD"
 }
 
+variable "public_access_cidrs" {
+  description = "CIDR blocks allowed to access the EKS public API endpoint. Must include all admin and CI/CD IPs to avoid lockout."
+  type        = list(string)
+}
+
 variable "node_group" {
   description = "Configuration for the default EKS managed node group."
   type = object({

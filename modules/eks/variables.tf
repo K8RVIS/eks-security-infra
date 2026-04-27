@@ -74,6 +74,16 @@ variable "node_group" {
   }
 }
 
+variable "public_access_cidrs" {
+  description = "CIDR blocks allowed to access the EKS public API endpoint. Must include all admin and CI/CD IPs to avoid lockout."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.public_access_cidrs) > 0
+    error_message = "At least one CIDR block must be specified for public API access."
+  }
+}
+
 variable "default_tags" {
   description = "Additional tags merged into all EKS resources."
   type        = map(string)
