@@ -5,6 +5,7 @@ namespace: team-d
 
 resources:
   - ../../base
+  - resource-controls.yaml
 
 patches:
   - path: web-ingress-patch.yaml
