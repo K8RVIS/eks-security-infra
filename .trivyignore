@@ -1,0 +1,3 @@
+# reason: false positive, reviewed by security-team
+# image: nginx:1.27.5
+CVE-2026-12345 exp:2025-04-31  # 예시로 추가한 내용이며 exp를 통해 해당 CVE 예외처리 유효기한을 설정한다. 
