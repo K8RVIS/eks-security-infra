@@ -22,8 +22,13 @@ spec:
         - name: api
           image: ealen/echo-server
           env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-runtime-secrets
+                  key: REDIS_PASSWORD
             - name: REDIS_URL
-              value: redis://:training-password@db:6379/0
+              value: redis://:$(REDIS_PASSWORD)@db:6379/0
             - name: EXTERNAL_POSTGRES_HOST
               value: reporting-db.training.local
             - name: EXTERNAL_POSTGRES_PORT
@@ -33,7 +38,10 @@ spec:
             - name: EXTERNAL_POSTGRES_USER
               value: training-api
             - name: EXTERNAL_POSTGRES_PASSWORD
-              value: training-external-password
+              valueFrom:
+                secretKeyRef:
+                  name: app-runtime-secrets
+                  key: EXTERNAL_POSTGRES_PASSWORD
           ports:
             - containerPort: 80
               name: http
