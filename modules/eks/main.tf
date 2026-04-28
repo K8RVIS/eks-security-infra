@@ -102,8 +102,13 @@ resource "aws_eks_cluster" "this" {
 
   vpc_config {
     subnet_ids              = var.cluster_subnet_ids
-    endpoint_private_access = true
     endpoint_public_access  = true
+  }
+
+    # API 기반 인증 활성화 
+  access_config {
+    authentication_mode = var.authentication_mode
+    bootstrap_cluster_creator_admin_permissions = true 
   }
 
   depends_on = [
@@ -204,4 +209,44 @@ resource "aws_eks_node_group" "this" {
       Name = local.node_group_name
     }
   )
+  
+}
+# 클러스터에 등록
+resource "aws_eks_access_entry" "this" {
+  for_each = var.access_entries
+
+  cluster_name      = aws_eks_cluster.this.name
+  principal_arn     = each.value.principal_arn
+  type              = "STANDARD"
+}
+
+# 2. 등록된 신분에 실제 권한 정책 연결
+resource "aws_eks_access_policy_association" "this" {
+  # 변수 내의 policy_associations를 모두 찾아서 연결하는 반복문
+  for_each = {
+    for pair in flatten([
+      for name, entry in var.access_entries : [
+        for policy_name, policy in entry.policy_associations : {
+          entry_name  = name
+          policy_name = policy_name
+          principal   = entry.principal_arn
+          policy_arn  = policy.policy_arn
+          scope       = policy.access_scope
+        }
+      ]
+    ]) : "${pair.entry_name}-${pair.policy_name}" => pair
+  }
+
+  cluster_name  = aws_eks_cluster.this.name
+  policy_arn    = each.value.policy_arn
+  principal_arn = each.value.principal
+
+  access_scope {
+    type       = each.value.scope.type
+    namespaces = lookup(each.value.scope, "namespaces", null)
+  }
+
+  depends_on = [
+    aws_eks_access_entry.this
+  ]
 }

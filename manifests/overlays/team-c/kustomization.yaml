@@ -5,6 +5,7 @@ namespace: team-c
 
 resources:
   - ../../base
+  - webhook-patch.yaml
 
 patches:
   - path: web-ingress-patch.yaml
@@ -12,3 +13,6 @@ patches:
       kind: Ingress
       name: web
   - path: service-patch.yaml
+    target:
+      kind: Service
+      name: web

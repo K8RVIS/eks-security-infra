@@ -11,6 +11,24 @@ data "terraform_remote_state" "infra" {
 data "aws_eks_cluster_auth" "infra" {
   name = data.terraform_remote_state.infra.outputs.cluster_name
 }
+variable "cluster_name" {
+  default = "eks-secure-infra-dev"
+}
+
+data "aws_eks_cluster" "this" {
+  name = var.cluster_name
+}
+ 
+data "tls_certificate" "eks" {
+  url = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
+}
+
+# 2. OIDC Provider를 직접 생성(Resource)합니다. (Data가 아니라 Resource입니다!)
+resource "aws_iam_openid_connect_provider" "this" {
+  client_id_list  = ["sts.amazonaws.com"]
+  thumbprint_list = [data.tls_certificate.eks.certificates[0].sha1_fingerprint]
+  url             = data.aws_eks_cluster.this.identity[0].oidc[0].issuer
+}
 
 module "k8s_base" {
   source = "../../modules/k8s-base"
@@ -23,6 +41,9 @@ module "k8s_base" {
   aws_node_termination_handler_chart_version = var.aws_node_termination_handler_chart_version
   ingress_nginx_namespace                    = var.ingress_nginx_namespace
   ingress_nginx_chart_version                = var.ingress_nginx_chart_version
+  cluster_name      = var.cluster_name
+  oidc_provider_url = aws_iam_openid_connect_provider.this.url
+  oidc_provider_arn = aws_iam_openid_connect_provider.this.arn
 }
 
 module "namespaces" {

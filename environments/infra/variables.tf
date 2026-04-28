@@ -80,3 +80,7 @@ variable "node_group" {
     disk_size_gb   = 20
   }
 }
+variable "user_iam_arn" {
+  description = "EKS 관리자 권한을 부여할 IAM ARN"
+  type        = string
+}

@@ -4,10 +4,10 @@ metadata:
   name: web
   namespace: team-c
 spec:
-  type: NodePort
+  type: NodePort #clusterIP에서 변경
   selector:
-    app.kubernetes.io/name: web # Deployment의 label과 일치
+    app.kubernetes.io/name: web
   ports:
-    - protocol: TCP
-      port: 80 # Ingress가 바라보는 포트
-      targetPort: 80 # Deployment 컨테이너가 열어놓은 포트
+    - protocol: TCP #작성하지 않아도 default로 적용됨
+      port: 80
+      targetPort: 80

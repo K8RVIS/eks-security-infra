@@ -65,3 +65,24 @@ resource "helm_release" "ingress_nginx" {
     EOT
   ]
 }
+resource "helm_release" "lbc" {
+  name       = "aws-load-balancer-controller"
+  repository = "https://aws.github.io/eks-charts"
+  chart      = "aws-load-balancer-controller"
+  namespace  = "kube-system"
+  
+
+  values = [
+    yamlencode({
+      clusterName = var.cluster_name
+      serviceAccount = {
+        create = true
+        name   = "aws-load-balancer-controller"
+        annotations = {
+          "eks.amazonaws.com/role-arn" = aws_iam_role.lbc_role.arn
+        }
+      }
+      region = "ap-northeast-2"
+    })
+  ]
+}
