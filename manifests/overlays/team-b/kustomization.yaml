@@ -5,7 +5,6 @@ namespace: team-b
 
 resources:
   - ../../base
-  - sa-patch.yaml  
 patches:
   - path: web-ingress-patch.yaml
     target:
