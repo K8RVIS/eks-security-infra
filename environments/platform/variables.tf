@@ -124,3 +124,15 @@ variable "team_names" {
   type        = list(string)
   default     = ["team-a", "team-b", "team-c", "team-d"]
 }
+
+variable "external_secrets_namespace" {
+  description = "Namespace used for External Secrets Operator."
+  type        = string
+  default     = "external-secrets"
+}
+
+variable "external_secrets_chart_version" {
+  description = "Pinned chart version for External Secrets Operator."
+  type        = string
+  default     = "2.3.0"
+}

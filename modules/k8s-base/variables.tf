@@ -45,3 +45,20 @@ variable "ingress_nginx_chart_version" {
   type        = string
   default     = "4.14.1"
 }
+
+variable "external_secrets_namespace" {
+  description = "Namespace used for External Secrets Operator."
+  type        = string
+  default     = "external-secrets"
+}
+
+variable "external_secrets_chart_version" {
+  description = "Pinned chart version for External Secrets Operator."
+  type        = string
+  default     = "2.3.0"
+}
+
+variable "external_secrets_role_arn" {
+  description = "IAM role ARN used by External Secrets Operator via IRSA."
+  type        = string
+}

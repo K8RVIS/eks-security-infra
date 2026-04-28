@@ -62,3 +62,13 @@ output "node_group_arn" {
   description = "ARN of the default infra EKS managed node group."
   value       = module.eks.node_group_arn
 }
+
+output "cluster_oidc_issuer_url" {
+  description = "OIDC issuer URL for the infra EKS cluster."
+  value       = module.eks.cluster_oidc_issuer_url
+}
+
+output "cluster_oidc_provider_arn" {
+  description = "IAM OIDC provider ARN for IRSA."
+  value       = module.eks.cluster_oidc_provider_arn
+}

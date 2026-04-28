@@ -65,3 +65,29 @@ resource "helm_release" "ingress_nginx" {
     EOT
   ]
 }
+
+resource "helm_release" "external_secrets" {
+  name             = "external-secrets"
+  namespace        = var.external_secrets_namespace
+  create_namespace = true
+  repository       = "https://charts.external-secrets.io"
+  chart            = "external-secrets"
+  version          = var.external_secrets_chart_version
+  timeout          = var.helm_release_timeout_seconds
+  atomic           = true
+  cleanup_on_fail  = true
+  wait             = true
+
+  values = [
+    yamlencode({
+      installCRDs = true
+      serviceAccount = {
+        create = true
+        name   = "external-secrets"
+        annotations = {
+          "eks.amazonaws.com/role-arn" = var.external_secrets_role_arn
+        }
+      }
+    })
+  ]
+}
