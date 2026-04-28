@@ -3,7 +3,7 @@ mock_provider "helm" {
 }
 
 variables {
-  metrics_server_chart_version        = "3.13.0"
+  metrics_server_chart_version       = "3.13.0"
   ingress_nginx_chart_version        = "4.14.1"
   aws_node_termination_handler_chart = "aws-node-termination-handler"
 }
@@ -59,5 +59,25 @@ run "plan_deploys_core_addons" {
   assert {
     condition     = output.ingress_service_name == "ingress-nginx-controller"
     error_message = "The module must expose the ingress controller service name."
+  }
+
+  assert {
+    condition     = helm_release.external_secrets.name == "external-secrets"
+    error_message = "External Secrets Operator release must use the expected release name."
+  }
+
+  assert {
+    condition     = helm_release.external_secrets.repository == "https://charts.external-secrets.io"
+    error_message = "External Secrets Operator must use the official helm repository."
+  }
+
+  assert {
+    condition     = helm_release.external_secrets.chart == "external-secrets"
+    error_message = "External Secrets Operator must install the external-secrets chart."
+  }
+
+  assert {
+    condition     = helm_release.external_secrets.namespace == var.external_secrets_namespace
+    error_message = "External Secrets Operator must deploy into the configured namespace."
   }
 }

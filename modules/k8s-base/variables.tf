@@ -45,3 +45,21 @@ variable "ingress_nginx_chart_version" {
   type        = string
   default     = "4.14.1"
 }
+
+variable "external_secrets_namespace" {
+  description = "Namespace used for the External Secrets Operator release."
+  type        = string
+  default     = "external-secrets"
+}
+
+variable "external_secrets_chart_version" {
+  description = "Pinned chart version for External Secrets Operator. Set to null to use the repository default."
+  type        = string
+  default     = null
+}
+
+variable "external_secrets_service_account_name" {
+  description = "ServiceAccount name used by External Secrets Operator."
+  type        = string
+  default     = "external-secrets"
+}
