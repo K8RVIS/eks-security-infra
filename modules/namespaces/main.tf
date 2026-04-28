@@ -10,35 +10,50 @@ resource "kubernetes_namespace_v1" "teams" {
   }
 }
 
-variable "default_namespace_resource_quota_hard" {
-  description = "Default hard resource quota applied to the limited namespace."
-  type        = map(string)
-
-  default = {
-    pods              = "20"
-    "requests.cpu"    = "2"
-    "requests.memory" = "4Gi"
-    "limits.cpu"      = "4"
-    "limits.memory"   = "8Gi"
+locals {
+  resource_limited_namespaces = {
+    for name, namespace in kubernetes_namespace_v1.teams :
+    name => namespace
+    if name == "team-a"
   }
 }
 
-variable "namespace_container_default_requests" {
-  description = "Default container resource requests applied by LimitRange."
-  type        = map(string)
+resource "kubernetes_resource_quota_v1" "teams" {
+  for_each = local.resource_limited_namespaces
 
-  default = {
-    cpu    = "100m"
-    memory = "128Mi"
+  metadata {
+    name      = "team-resource-quota"
+    namespace = each.value.metadata[0].name
+
+    labels = {
+      "app.kubernetes.io/part-of" = var.project_name
+      "training.k8rvis.io/team"   = each.key
+    }
+  }
+
+  spec {
+    hard = var.default_namespace_resource_quota_hard
   }
 }
 
-variable "namespace_container_default_limits" {
-  description = "Default container resource limits applied by LimitRange."
-  type        = map(string)
+resource "kubernetes_limit_range_v1" "teams" {
+  for_each = local.resource_limited_namespaces
 
-  default = {
-    cpu    = "500m"
-    memory = "512Mi"
+  metadata {
+    name      = "team-container-limits"
+    namespace = each.value.metadata[0].name
+
+    labels = {
+      "app.kubernetes.io/part-of" = var.project_name
+      "training.k8rvis.io/team"   = each.key
+    }
+  }
+
+  spec {
+    limit {
+      type            = "Container"
+      default         = var.namespace_container_default_limits
+      default_request = var.namespace_container_default_requests
+    }
   }
 }
