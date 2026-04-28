@@ -124,3 +124,15 @@ variable "team_names" {
   type        = list(string)
   default     = ["team-a", "team-b", "team-c", "team-d"]
 }
+
+variable "acm_certificate_arn" {
+  description = "ACM certificate ARN attached to the NLB HTTPS listener. Empty string disables TLS at the NLB."
+  type        = string
+  default     = ""
+}
+
+variable "ssl_policy" {
+  description = "TLS security policy applied to the NLB HTTPS listener."
+  type        = string
+  default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+}

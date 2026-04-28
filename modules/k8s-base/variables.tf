@@ -1,7 +1,7 @@
 variable "helm_release_timeout_seconds" {
   description = "Timeout in seconds applied to each addon helm release."
   type        = number
-  default     = 600
+  default     = 1200
 }
 
 variable "metrics_server_namespace" {
@@ -44,4 +44,16 @@ variable "ingress_nginx_chart_version" {
   description = "Pinned chart version for ingress-nginx."
   type        = string
   default     = "4.14.1"
+}
+
+variable "acm_certificate_arn" {
+  description = "ACM certificate ARN attached to the NLB HTTPS listener. Empty string disables TLS at the NLB."
+  type        = string
+  default     = ""
+}
+
+variable "ssl_policy" {
+  description = "TLS security policy applied to the NLB HTTPS listener."
+  type        = string
+  default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
 }

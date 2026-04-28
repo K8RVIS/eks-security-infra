@@ -23,16 +23,20 @@ provider "aws" {
   region = var.aws_region
 }
 
+data "aws_eks_cluster" "infra" {
+  name = data.terraform_remote_state.infra.outputs.cluster_name
+}
+
 provider "kubernetes" {
-  host                   = data.terraform_remote_state.infra.outputs.cluster_endpoint
-  cluster_ca_certificate = base64decode(data.terraform_remote_state.infra.outputs.cluster_certificate_authority_data)
+  host                   = data.aws_eks_cluster.infra.endpoint
+  cluster_ca_certificate = base64decode(data.aws_eks_cluster.infra.certificate_authority[0].data)
   token                  = data.aws_eks_cluster_auth.infra.token
 }
 
 provider "helm" {
   kubernetes {
-    host                   = data.terraform_remote_state.infra.outputs.cluster_endpoint
-    cluster_ca_certificate = base64decode(data.terraform_remote_state.infra.outputs.cluster_certificate_authority_data)
+    host                   = data.aws_eks_cluster.infra.endpoint
+    cluster_ca_certificate = base64decode(data.aws_eks_cluster.infra.certificate_authority[0].data)
     token                  = data.aws_eks_cluster_auth.infra.token
   }
 }
