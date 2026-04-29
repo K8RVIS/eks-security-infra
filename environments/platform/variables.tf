@@ -82,12 +82,6 @@ variable "acm_certificate_arn" {
   type        = string
 }
 
-variable "ssl_policy" {
-  description = "TLS security policy applied to the NLB HTTPS listener."
-  type        = string
-  default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-}
-
 variable "argocd_namespace" {
   description = "Namespace used for the ArgoCD installation."
   type        = string
