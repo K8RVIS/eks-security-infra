@@ -126,6 +126,35 @@ variable "team_names" {
 }
 
 variable "ingress_lb_acm_certificate_arn" {
-  description = "ACM certificate ARN used by the ingress-nginx AWS load balancer TLS listener."
+  description = "Existing ACM certificate ARN. Leave null to create and validate one automatically."
   type        = string
+  default     = null
+}
+
+variable "cloudflare_zone_id" {
+  description = "Cloudflare zone ID that hosts the ingress domain."
+  type        = string
+}
+
+variable "ingress_certificate_domain_name" {
+  description = "Primary ACM certificate domain name."
+  type        = string
+}
+
+variable "ingress_certificate_subject_alternative_names" {
+  description = "Additional ACM certificate domain names."
+  type        = list(string)
+  default     = []
+}
+
+variable "cloudflare_email" {
+  description = "Cloudflare account email for Global API Key authentication."
+  type        = string
+  sensitive   = true
+}
+
+variable "cloudflare_api_key" {
+  description = "Cloudflare Global API Key."
+  type        = string
+  sensitive   = true
 }

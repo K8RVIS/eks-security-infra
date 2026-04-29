@@ -62,3 +62,8 @@ output "argocd_application_names" {
   description = "Generated team ArgoCD application names."
   value       = module.argocd.application_names
 }
+
+output "ingress_lb_acm_certificate_arn" {
+  description = "ACM certificate ARN attached to the ingress-nginx load balancer."
+  value       = local.resolved_ingress_lb_acm_certificate_arn
+}

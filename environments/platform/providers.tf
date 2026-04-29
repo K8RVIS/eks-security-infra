@@ -16,6 +16,11 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 2.0"
     }
+
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 5.0"
+    }
   }
 }
 
@@ -35,4 +40,9 @@ provider "helm" {
     cluster_ca_certificate = base64decode(data.terraform_remote_state.infra.outputs.cluster_certificate_authority_data)
     token                  = data.aws_eks_cluster_auth.infra.token
   }
+}
+
+provider "cloudflare" {
+  email   = var.cloudflare_email
+  api_key = var.cloudflare_api_key
 }

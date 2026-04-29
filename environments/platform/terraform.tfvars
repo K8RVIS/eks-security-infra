@@ -13,4 +13,9 @@ argocd_chart_version         = "9.4.17"
 argocd_apps_chart_version    = "2.0.3"
 gitops_repo_url              = "https://github.com/K8RVIS/eks-secure-infra.git"
 
-ingress_lb_acm_certificate_arn = "arn:aws:acm:ap-northeast-2:357542025037:certificate/6e95b8cb-8e7a-44ac-a47d-be12cf7a413b"
+ingress_lb_acm_certificate_arn = null
+
+cloudflare_zone_id = "ae86e28ffa7d6b1f86584d8d106d7043"
+
+ingress_certificate_domain_name               = "*.terraform-study-esc.shop"
+ingress_certificate_subject_alternative_names = []
