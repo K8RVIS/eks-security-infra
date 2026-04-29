@@ -49,7 +49,7 @@ resource "helm_release" "ingress_nginx" {
   chart            = "ingress-nginx"
   version          = var.ingress_nginx_chart_version
   timeout          = var.helm_release_timeout_seconds
-  atomic           = true
+  atomic           = false
   cleanup_on_fail  = true
   wait             = true
 

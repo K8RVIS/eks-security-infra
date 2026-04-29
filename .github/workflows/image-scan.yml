@@ -1,0 +1,91 @@
+name: container image Vulnerability Scan
+
+on:
+  pull_request:
+    branches: ["main"]
+
+# PR댓글 작성을 위한 GitHub Token 권한 설정
+permissions:
+  pull-requests: write
+  contents: read
+
+env:
+  TARGET_IMAGE: "nginx:1.21"
+
+jobs:
+  security-scan:
+    name: Trivy Security Scan & Report
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 1. Checkout code
+        uses: actions/checkout@v4
+
+      - name: 2. Pull Target Image
+        run: docker pull ${{ env.TARGET_IMAGE }}
+
+      # CRITICAL, HIGH 발견 시 즉시 파이프라인 배포 차단
+      - name: 3. Run Trivy Scan (Block on CRITICAL, HIGH)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.TARGET_IMAGE }}
+          format: "table"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+          exit-code: "1" # 여기서 실패하면 아래 단계는 모두 취소됨
+
+      # LOW, MEDIUM 발견 시 텍스트 파일로 결과 저장 (파이프라인 통과)
+      - name: 4. Run Trivy Scan (Report on LOW, MEDIUM)
+        if: success() # Gate 1을 무사히 통과했을 때만 실행됨
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.TARGET_IMAGE }}
+          format: "table"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "UNKNOWN,LOW,MEDIUM"
+          exit-code: "0" # 취약점이 있어도 실패 처리하지 않음
+          output: "trivy-report.txt"
+
+      # 저장된 텍스트 파일을 읽어 PR 댓글로 자동 작성
+      - name: 5. Post Trivy Report as PR Comment
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            let report = '';
+
+            // 저장된 리포트 파일 읽기
+            try {
+              report = fs.readFileSync('trivy-report.txt', 'utf8');
+            } catch (err) {
+              report = '발견된 LOW/MEDIUM 취약점이 없습니다. 완벽합니다! 🎉';
+            }
+
+            // PR 댓글 마크다운 템플릿
+            const output = `
+            ### 🛡️ Trivy Security Scan Report (LOW/MEDIUM)
+            **CRITICAL 및 HIGH 취약점 스캔을 무사히 통과했습니다!** ✅
+
+            아래는 참고용 LOW 및 MEDIUM 등급 취약점 목록입니다. 당장 배포를 막지는 않지만, 다음 스프린트 때 패치를 고려해 주세요.
+
+            <details>
+              <summary>세부 리포트 보기 (클릭하여 펼치기)</summary>
+
+              \`\`\`text
+              ${report}
+              \`\`\`
+
+            </details>
+            `;
+
+            // GitHub API를 호출하여 현재 PR에 댓글 달기
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })
