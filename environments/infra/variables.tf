@@ -80,3 +80,21 @@ variable "node_group" {
     disk_size_gb   = 20
   }
 }
+
+variable "ecr_repository_names" {
+  description = "Short names of the ECR repositories to create (prefixed with project_name)."
+  type        = list(string)
+  default     = ["web", "api", "db"]
+}
+
+variable "ecr_max_image_count" {
+  description = "Maximum number of images to retain per ECR repository."
+  type        = number
+  default     = 10
+}
+
+variable "ecr_untagged_expiry_days" {
+  description = "Days after which untagged ECR images are expired."
+  type        = number
+  default     = 7
+}

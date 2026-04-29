@@ -38,3 +38,7 @@ node_group = {
   max_size       = 3
   disk_size_gb   = 20
 }
+
+ecr_repository_names     = ["web", "api", "db"]
+ecr_max_image_count      = 10
+ecr_untagged_expiry_days = 7
