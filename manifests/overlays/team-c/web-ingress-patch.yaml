@@ -2,9 +2,17 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: web
+  namespace: team-c
+  annotations:
+    alb.ingress.kubernetes.io/certificate-arn: "arn:aws:acm:ap-northeast-2:357542025037:certificate/6e95b8cb-8e7a-44ac-a47d-be12cf7a413b"
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]' # 열어줄 포트 정의
+    alb.ingress.kubernetes.io/ssl-redirect: "443" # HTTP로 오면 HTTPS로 강제 리다이렉트
+    alb.ingress.kubernetes.io/ssl-policy: "ELBSecurityPolicy-TLS-1-2-2017-01" # 보안 정책 설정 (TLS 1.2 이상 허용 정책)
+    alb.ingress.kubernetes.io/scheme: internet-facing
 spec:
+  ingressClassName: alb
   rules:
-    - host: team-c.training.local
+    - host: teamc.terraform-study-esc.shop
       http:
         paths:
           - path: /

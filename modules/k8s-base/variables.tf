@@ -45,3 +45,12 @@ variable "ingress_nginx_chart_version" {
   type        = string
   default     = "4.14.1"
 }
+variable "cluster_name" {
+  description = "EKS 클러스터 이름"
+  type        = string
+}
+
+variable "vpc_id" {
+  description = "EKS 클러스터가 배포된 VPC의 ID"
+  type        = string
+}
