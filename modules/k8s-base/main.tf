@@ -54,14 +54,24 @@ resource "helm_release" "ingress_nginx" {
   wait             = true
 
   values = [
-    <<-EOT
-    controller:
-      ingressClassResource:
-        default: true
-      service:
-        type: LoadBalancer
-        annotations:
-          service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
-    EOT
+    yamlencode({
+      controller = {
+        ingressClassResource = { default = true }
+        config = {
+          use-forwarded-headers      = "true"
+          compute-full-forwarded-for = "true"
+        }
+        service = {
+          type = "LoadBalancer"
+          annotations = {
+            "service.beta.kubernetes.io/aws-load-balancer-scheme"                  = "internet-facing"
+            "service.beta.kubernetes.io/aws-load-balancer-ssl-cert"                = var.acm_certificate_arn
+            "service.beta.kubernetes.io/aws-load-balancer-ssl-ports"               = "443"
+            "service.beta.kubernetes.io/aws-load-balancer-backend-protocol"        = "tcp"
+            "service.beta.kubernetes.io/aws-load-balancer-ssl-negotiation-policy"  = var.ssl_policy
+          }
+        }
+      }
+    })
   ]
 }
