@@ -78,8 +78,14 @@ variable "ingress_nginx_chart_version" {
 }
 
 variable "acm_certificate_arn" {
-  description = "ARN of the ACM certificate to attach to the ingress-nginx NLB for HTTPS termination."
+  description = "ACM certificate ARN attached to the NLB HTTPS listener."
   type        = string
+}
+
+variable "ssl_policy" {
+  description = "TLS security policy applied to the NLB HTTPS listener."
+  type        = string
+  default     = "ELBSecurityPolicy-TLS13-1-2-2021-06"
 }
 
 variable "argocd_namespace" {
