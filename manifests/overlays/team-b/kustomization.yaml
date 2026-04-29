@@ -11,3 +11,11 @@ patches:
     target:
       kind: Ingress
       name: web
+  - path: db-patch.yaml
+    target:
+      kind: StatefulSet
+      name: db
+  - path: api-patch.yaml
+    target:
+      kind: Deployment
+      name: api

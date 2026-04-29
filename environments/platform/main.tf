@@ -28,8 +28,12 @@ module "k8s_base" {
 module "namespaces" {
   source = "../../modules/namespaces"
 
-  project_name = var.project_name
-  team_names   = var.team_names
+  project_name         = var.project_name
+  team_names           = var.team_names
+  secret_enabled_teams = var.secret_enabled_teams
+  redis_password       = var.redis_password
+  postgres_password    = var.postgres_password
+  postgres_user        = var.postgres_user
 
   depends_on = [module.k8s_base]
 }
