@@ -26,3 +26,15 @@ module "eks" {
   node_group         = var.node_group
   default_tags       = var.default_tags
 }
+
+module "ecr" {
+  source = "../../modules/ecr"
+
+  project_name         = var.project_name
+  environment          = var.environment
+  owner                = var.owner
+  repository_names     = var.ecr_repository_names
+  max_image_count      = var.ecr_max_image_count
+  untagged_expiry_days = var.ecr_untagged_expiry_days
+  default_tags         = var.default_tags
+}
