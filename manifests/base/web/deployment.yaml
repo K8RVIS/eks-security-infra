@@ -27,6 +27,10 @@ spec:
             runAsUser: 101
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
+            capabilities:       
+              drop: ["ALL"]
+            seccompProfile:     
+              type: RuntimeDefault
           volumeMounts:
             - name: cache
               mountPath: /var/cache/nginx
