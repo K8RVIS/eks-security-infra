@@ -38,6 +38,10 @@ spec:
             runAsUser: 999
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
+            capabilities:       
+              drop: ["ALL"]
+            seccompProfile:     
+              type: RuntimeDefault
           volumeMounts:
             - name: redis-data
               mountPath: /data
