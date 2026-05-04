@@ -65,6 +65,30 @@ variable "aws_node_termination_handler_chart_version" {
   default     = null
 }
 
+variable "aws_load_balancer_controller_namespace" {
+  description = "Namespace used for AWS Load Balancer Controller."
+  type        = string
+  default     = "kube-system"
+}
+
+variable "aws_load_balancer_controller_service_account_name" {
+  description = "Service account name used by AWS Load Balancer Controller."
+  type        = string
+  default     = "aws-load-balancer-controller"
+}
+
+variable "aws_load_balancer_controller_chart_version" {
+  description = "Pinned chart version for AWS Load Balancer Controller."
+  type        = string
+  default     = "3.2.2"
+}
+
+variable "aws_load_balancer_controller_iam_policy_url" {
+  description = "Pinned IAM policy document URL for AWS Load Balancer Controller."
+  type        = string
+  default     = "https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v3.2.2/docs/install/iam_policy.json"
+}
+
 variable "ingress_nginx_namespace" {
   description = "Namespace used for the ingress-nginx release."
   type        = string

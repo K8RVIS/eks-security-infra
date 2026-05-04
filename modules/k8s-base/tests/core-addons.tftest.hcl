@@ -3,9 +3,12 @@ mock_provider "helm" {
 }
 
 variables {
-  metrics_server_chart_version        = "3.13.0"
+  metrics_server_chart_version       = "3.13.0"
   ingress_nginx_chart_version        = "4.14.1"
   aws_node_termination_handler_chart = "aws-node-termination-handler"
+  aws_region                         = "ap-northeast-2"
+  cluster_name                       = "eks-secure-infra-dev"
+  vpc_id                             = "vpc-0123456789abcdef0"
 }
 
 run "plan_deploys_core_addons" {
@@ -59,5 +62,30 @@ run "plan_deploys_core_addons" {
   assert {
     condition     = output.ingress_service_name == "ingress-nginx-controller"
     error_message = "The module must expose the ingress controller service name."
+  }
+
+  assert {
+    condition     = helm_release.aws_load_balancer_controller.name == "aws-load-balancer-controller"
+    error_message = "AWS Load Balancer Controller release must use the expected release name."
+  }
+
+  assert {
+    condition     = helm_release.aws_load_balancer_controller.repository == "https://aws.github.io/eks-charts"
+    error_message = "AWS Load Balancer Controller must use the official EKS charts repository."
+  }
+
+  assert {
+    condition     = helm_release.aws_load_balancer_controller.version == var.aws_load_balancer_controller_chart_version
+    error_message = "AWS Load Balancer Controller must pin the configured chart version."
+  }
+
+  assert {
+    condition     = strcontains(join("", helm_release.aws_load_balancer_controller.values), "serviceAccount")
+    error_message = "AWS Load Balancer Controller values must configure the pre-created IRSA service account."
+  }
+
+  assert {
+    condition     = output.aws_load_balancer_controller_release_name == "aws-load-balancer-controller"
+    error_message = "The module must expose the AWS Load Balancer Controller release name."
   }
 }
