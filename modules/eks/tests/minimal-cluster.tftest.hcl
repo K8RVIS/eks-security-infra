@@ -21,7 +21,7 @@ variables {
   ]
 
   node_group = {
-    instance_types = ["t4g.medium"]
+    instance_types = ["t4g.medium", "t4g.large", "m7g.medium", "c7g.medium"]
     desired_size   = 2
     min_size       = 1
     max_size       = 3
@@ -70,6 +70,16 @@ run "plan_builds_minimal_eks_cluster" {
   assert {
     condition     = aws_eks_node_group.this.capacity_type == "SPOT"
     error_message = "Managed node group must use SPOT capacity for the cost-optimized lab environment."
+  }
+
+  assert {
+    condition     = length(aws_eks_node_group.this.instance_types) > 1
+    error_message = "Managed node group must use multiple spot instance type candidates to reduce interruption concentration risk."
+  }
+
+  assert {
+    condition     = length(setsubtract(toset(var.node_group.instance_types), toset(aws_eks_node_group.this.instance_types))) == 0
+    error_message = "Managed node group must pass through the configured spot instance type candidates."
   }
 
   assert {

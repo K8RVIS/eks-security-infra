@@ -45,6 +45,11 @@ run "plan_deploys_core_addons" {
   }
 
   assert {
+    condition     = strcontains(join("", helm_release.aws_node_termination_handler.values), "enableRebalanceMonitoring: false")
+    error_message = "Node Termination Handler must not cordon spot nodes on rebalance recommendations in the cost-optimized lab cluster."
+  }
+
+  assert {
     condition     = helm_release.ingress_nginx.name == "ingress-nginx"
     error_message = "Ingress NGINX release must use the expected release name."
   }

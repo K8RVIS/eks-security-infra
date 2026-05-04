@@ -36,7 +36,7 @@ kubernetes_version = "1.34"
 node_ami_type = "AL2023_ARM_64_STANDARD"
 
 node_group = {
-  instance_types = ["t4g.medium"]
+  instance_types = ["t4g.medium", "t4g.large", "m7g.medium", "c7g.medium"]
   desired_size   = 2
   min_size       = 1
   max_size       = 3
