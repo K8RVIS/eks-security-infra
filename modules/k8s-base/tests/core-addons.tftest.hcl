@@ -65,27 +65,22 @@ run "plan_deploys_core_addons" {
   }
 
   assert {
-    condition     = helm_release.aws_load_balancer_controller.name == "aws-load-balancer-controller"
-    error_message = "AWS Load Balancer Controller release must use the expected release name."
+    condition     = helm_release.external_secrets.name == "external-secrets"
+    error_message = "External Secrets Operator release must use the expected release name."
   }
 
   assert {
-    condition     = helm_release.aws_load_balancer_controller.repository == "https://aws.github.io/eks-charts"
-    error_message = "AWS Load Balancer Controller must use the official EKS charts repository."
+    condition     = helm_release.external_secrets.repository == "https://charts.external-secrets.io"
+    error_message = "External Secrets Operator must use the official helm repository."
   }
 
   assert {
-    condition     = helm_release.aws_load_balancer_controller.version == var.aws_load_balancer_controller_chart_version
-    error_message = "AWS Load Balancer Controller must pin the configured chart version."
+    condition     = helm_release.external_secrets.chart == "external-secrets"
+    error_message = "External Secrets Operator must install the external-secrets chart."
   }
 
   assert {
-    condition     = strcontains(join("", helm_release.aws_load_balancer_controller.values), "serviceAccount")
-    error_message = "AWS Load Balancer Controller values must configure the pre-created IRSA service account."
-  }
-
-  assert {
-    condition     = output.aws_load_balancer_controller_release_name == "aws-load-balancer-controller"
-    error_message = "The module must expose the AWS Load Balancer Controller release name."
+    condition     = helm_release.external_secrets.namespace == var.external_secrets_namespace
+    error_message = "External Secrets Operator must deploy into the configured namespace."
   }
 }

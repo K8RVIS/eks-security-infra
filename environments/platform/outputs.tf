@@ -48,6 +48,21 @@ output "ingress_service_name" {
   value       = module.k8s_base.ingress_service_name
 }
 
+output "external_secrets_release_name" {
+  description = "Helm release name for External Secrets Operator."
+  value       = module.k8s_base.external_secrets_release_name
+}
+
+output "external_secrets_namespace" {
+  description = "Namespace where External Secrets Operator is deployed."
+  value       = module.k8s_base.external_secrets_namespace
+}
+
+output "external_secrets_role_arn" {
+  description = "IAM role ARN associated with the External Secrets Operator service account."
+  value       = aws_iam_role.external_secrets.arn
+}
+
 output "team_namespace_names" {
   description = "Created team namespace names."
   value       = module.namespaces.namespace_names

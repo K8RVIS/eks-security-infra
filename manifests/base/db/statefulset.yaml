@@ -29,7 +29,10 @@ spec:
             - redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
           env:
             - name: REDIS_PASSWORD
-              value: training-password
+              valueFrom:
+                secretKeyRef:
+                  name: app-runtime-secrets
+                  key: REDIS_PASSWORD
           ports:
             - containerPort: 6379
               name: redis

@@ -32,3 +32,13 @@ output "ingress_service_name" {
   description = "Service name exposed by ingress-nginx."
   value       = "${helm_release.ingress_nginx.name}-controller"
 }
+
+output "external_secrets_release_name" {
+  description = "Helm release name for External Secrets Operator."
+  value       = helm_release.external_secrets.name
+}
+
+output "external_secrets_namespace" {
+  description = "Namespace where External Secrets Operator is deployed."
+  value       = helm_release.external_secrets.namespace
+}
