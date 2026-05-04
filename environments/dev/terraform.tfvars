@@ -21,7 +21,7 @@ private_subnet_cidrs = [
 ]
 
 cluster_public_access_cidrs = [
-  "115.136.89.40/32",
+  "13.125.215.119/32",
 ]
 
 fck_nat_instance_type = "t4g.nano"
