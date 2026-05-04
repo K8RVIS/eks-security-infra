@@ -5,8 +5,25 @@ namespace: team-b
 
 resources:
   - ../../base
+  - default-serviceaccount.yaml
+  - api-serviceaccount.yaml
+  - web-serviceaccount.yaml
+  - db-serviceaccount.yaml
+
 patches:
   - path: web-ingress-patch.yaml
     target:
       kind: Ingress
       name: web
+  - path: api-deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: api
+  - path: web-deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: web
+  - path: db-statefulset-patch.yaml
+    target:
+      kind: StatefulSet
+      name: db
