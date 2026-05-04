@@ -71,10 +71,10 @@ variable "node_group" {
   })
 
   default = {
-    instance_types = ["t4g.medium", "t4g.large", "m7g.medium", "c7g.medium"]
-    desired_size   = 2
-    min_size       = 1
-    max_size       = 3
+    instance_types = ["t4g.medium", "t4g.large", "m7g.large", "c7g.large"]
+    desired_size   = 3
+    min_size       = 2
+    max_size       = 4
     disk_size_gb   = 20
   }
 
