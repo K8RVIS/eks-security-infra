@@ -29,7 +29,7 @@ output "aws_load_balancer_controller_release_name" {
 }
 
 output "aws_load_balancer_controller_role_arn" {
-  description = "IAM role ARN used by AWS Load Balancer Controller IRSA."
+  description = "IAM role ARN associated with AWS Load Balancer Controller through EKS Pod Identity."
   value       = aws_iam_role.aws_load_balancer_controller.arn
 }
 

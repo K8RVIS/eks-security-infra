@@ -95,6 +95,11 @@ resource "aws_iam_role_policy_attachment" "node_ecr_policy" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
 }
 
+resource "aws_iam_role_policy_attachment" "node_ebs_csi_policy" {
+  role       = aws_iam_role.node.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+}
+
 resource "aws_eks_cluster" "this" {
   name     = local.cluster_name
   role_arn = aws_iam_role.cluster.arn
@@ -203,6 +208,23 @@ resource "aws_eks_node_group" "this" {
     local.common_tags,
     {
       Name = local.node_group_name
+    }
+  )
+}
+
+resource "aws_eks_addon" "ebs_csi_driver" {
+  cluster_name = aws_eks_cluster.this.name
+  addon_name   = "aws-ebs-csi-driver"
+
+  depends_on = [
+    aws_eks_node_group.this,
+    aws_iam_role_policy_attachment.node_ebs_csi_policy,
+  ]
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.cluster_name}-ebs-csi-driver"
     }
   )
 }

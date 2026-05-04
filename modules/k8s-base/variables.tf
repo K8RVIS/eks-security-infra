@@ -56,7 +56,7 @@ variable "aws_load_balancer_controller_namespace" {
 }
 
 variable "aws_load_balancer_controller_service_account_name" {
-  description = "Pre-created IRSA service account name used by AWS Load Balancer Controller."
+  description = "Pre-created service account name used by AWS Load Balancer Controller."
   type        = string
   default     = "aws-load-balancer-controller"
 }

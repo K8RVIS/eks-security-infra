@@ -21,7 +21,7 @@ private_subnet_cidrs = [
 ]
 
 cluster_public_access_cidrs = [
-  "115.136.89.40/32",
+  "13.125.215.119/32",
 ]
 
 fck_nat_instance_type = "t4g.nano"
@@ -36,9 +36,9 @@ kubernetes_version = "1.34"
 node_ami_type = "AL2023_ARM_64_STANDARD"
 
 node_group = {
-  instance_types = ["t4g.medium"]
-  desired_size   = 2
-  min_size       = 1
-  max_size       = 3
+  instance_types = ["t4g.medium", "t4g.large", "m7g.large", "c7g.large"]
+  desired_size   = 3
+  min_size       = 2
+  max_size       = 4
   disk_size_gb   = 20
 }

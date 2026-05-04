@@ -69,7 +69,7 @@ resource "helm_release" "aws_node_termination_handler" {
   values = [
     <<-EOT
     enableSpotInterruptionDraining: true
-    enableRebalanceMonitoring: true
+    enableRebalanceMonitoring: false
     enableScheduledEventDraining: false
     EOT
   ]
@@ -98,6 +98,8 @@ resource "helm_release" "ingress_nginx" {
           service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
     EOT
   ]
+
+  depends_on = [helm_release.aws_load_balancer_controller]
 }
 
 resource "helm_release" "external_secrets" {
@@ -121,4 +123,6 @@ resource "helm_release" "external_secrets" {
       }
     })
   ]
+
+  depends_on = [helm_release.aws_load_balancer_controller]
 }

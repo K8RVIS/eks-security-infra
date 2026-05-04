@@ -21,10 +21,10 @@ variables {
   ]
 
   node_group = {
-    instance_types = ["t4g.medium"]
-    desired_size   = 2
-    min_size       = 1
-    max_size       = 3
+    instance_types = ["t4g.medium", "t4g.large", "m7g.large", "c7g.large"]
+    desired_size   = 3
+    min_size       = 2
+    max_size       = 4
     disk_size_gb   = 20
   }
 
@@ -73,6 +73,31 @@ run "plan_builds_minimal_eks_cluster" {
   }
 
   assert {
+    condition     = aws_iam_role_policy_attachment.node_ebs_csi_policy.policy_arn == "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+    error_message = "Node role must allow the EBS CSI driver to provision persistent volumes."
+  }
+
+  assert {
+    condition     = aws_eks_addon.ebs_csi_driver.addon_name == "aws-ebs-csi-driver"
+    error_message = "EKS must install the managed EBS CSI driver addon for dynamic EBS volume provisioning."
+  }
+
+  assert {
+    condition     = length(aws_eks_node_group.this.instance_types) > 1
+    error_message = "Managed node group must use multiple spot instance type candidates to reduce interruption concentration risk."
+  }
+
+  assert {
+    condition     = length(setsubtract(toset(var.node_group.instance_types), toset(aws_eks_node_group.this.instance_types))) == 0
+    error_message = "Managed node group must pass through the configured spot instance type candidates."
+  }
+
+  assert {
+    condition     = !contains(aws_eks_node_group.this.instance_types, "m7g.medium") && !contains(aws_eks_node_group.this.instance_types, "c7g.medium")
+    error_message = "Managed node group must avoid small Graviton medium candidates with low pod capacity."
+  }
+
+  assert {
     condition     = length(setsubtract(toset(aws_eks_node_group.this.subnet_ids), toset(var.node_subnet_ids))) == 0
     error_message = "The managed node group must use the configured node subnets."
   }
@@ -85,6 +110,11 @@ run "plan_builds_minimal_eks_cluster" {
   assert {
     condition     = aws_eks_node_group.this.scaling_config[0].desired_size == var.node_group.desired_size
     error_message = "Managed node group desired size must match the configured value."
+  }
+
+  assert {
+    condition     = aws_eks_node_group.this.scaling_config[0].desired_size == 3 && aws_eks_node_group.this.scaling_config[0].min_size == 2 && aws_eks_node_group.this.scaling_config[0].max_size == 4
+    error_message = "Managed node group must keep enough baseline pod slots for platform addons."
   }
 
   assert {
