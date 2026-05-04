@@ -73,6 +73,16 @@ run "plan_builds_minimal_eks_cluster" {
   }
 
   assert {
+    condition     = aws_iam_role_policy_attachment.node_ebs_csi_policy.policy_arn == "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+    error_message = "Node role must allow the EBS CSI driver to provision persistent volumes."
+  }
+
+  assert {
+    condition     = aws_eks_addon.ebs_csi_driver.addon_name == "aws-ebs-csi-driver"
+    error_message = "EKS must install the managed EBS CSI driver addon for dynamic EBS volume provisioning."
+  }
+
+  assert {
     condition     = length(aws_eks_node_group.this.instance_types) > 1
     error_message = "Managed node group must use multiple spot instance type candidates to reduce interruption concentration risk."
   }
