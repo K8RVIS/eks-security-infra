@@ -5,9 +5,15 @@ namespace: team-d
 
 resources:
   - ../../base
+  - default-serviceaccount.yaml
+  - api-serviceaccount.yaml
 
 patches:
   - path: web-ingress-patch.yaml
     target:
       kind: Ingress
       name: web
+  - path: api-deployment-patch.yaml
+    target:
+      kind: Deployment
+      name: api
