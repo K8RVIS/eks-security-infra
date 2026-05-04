@@ -39,7 +39,6 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-        trivyignores: .trivyignore
 
       - name: Generate JSON report
         uses: aquasecurity/trivy-action@v0.36.0
@@ -80,7 +79,6 @@ jobs:
             trivy-${{ matrix.name }}.json
             trivy-${{ matrix.name }}.sarif
           retention-days: 30
-          trivyignores: .trivyignore
 
       - name: Upload SARIF to GitHub Code Scanning
         if: always()
@@ -89,7 +87,6 @@ jobs:
         with:
           sarif_file: trivy-${{ matrix.name }}.sarif
           category: trivy-${{ matrix.name }}
-          trivyignores: .trivyignore
 
       - name: Fail on HIGH or CRITICAL vulnerabilities
         uses: aquasecurity/trivy-action@v0.36.0
