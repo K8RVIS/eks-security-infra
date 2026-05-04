@@ -33,6 +33,21 @@ variable "node_subnet_ids" {
   }
 }
 
+variable "cluster_public_access_cidrs" {
+  description = "CIDR blocks allowed to access the EKS public API endpoint."
+  type        = list(string)
+
+  validation {
+    condition     = length(var.cluster_public_access_cidrs) > 0
+    error_message = "At least one CIDR must be supplied for the EKS public API endpoint."
+  }
+
+  validation {
+    condition     = !contains(var.cluster_public_access_cidrs, "0.0.0.0/0") && !contains(var.cluster_public_access_cidrs, "::/0")
+    error_message = "Do not allow 0.0.0.0/0 or ::/0 for the EKS public API endpoint."
+  }
+}
+
 variable "kubernetes_version" {
   description = "Kubernetes version for the EKS cluster and managed node group."
   type        = string

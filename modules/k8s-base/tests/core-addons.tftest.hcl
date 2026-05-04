@@ -6,6 +6,9 @@ variables {
   metrics_server_chart_version       = "3.13.0"
   ingress_nginx_chart_version        = "4.14.1"
   aws_node_termination_handler_chart = "aws-node-termination-handler"
+  aws_region                         = "ap-northeast-2"
+  cluster_name                       = "eks-secure-infra-dev"
+  vpc_id                             = "vpc-0123456789abcdef0"
 }
 
 run "plan_deploys_core_addons" {

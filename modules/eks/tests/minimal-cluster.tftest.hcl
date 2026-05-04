@@ -16,6 +16,9 @@ variables {
   node_subnet_ids    = ["subnet-public-a", "subnet-public-b"]
   kubernetes_version = "1.34"
   node_ami_type      = "AL2023_ARM_64_STANDARD"
+  cluster_public_access_cidrs = [
+    "115.136.89.40/32",
+  ]
 
   node_group = {
     instance_types = ["t4g.medium"]
@@ -47,6 +50,21 @@ run "plan_builds_minimal_eks_cluster" {
   assert {
     condition     = length(setsubtract(toset(aws_eks_cluster.this.vpc_config[0].subnet_ids), toset(var.cluster_subnet_ids))) == 0
     error_message = "The EKS control plane must stay on the private cluster subnets."
+  }
+
+  assert {
+    condition     = aws_eks_cluster.this.vpc_config[0].endpoint_private_access && aws_eks_cluster.this.vpc_config[0].endpoint_public_access
+    error_message = "The EKS cluster must keep both private and public API endpoint access enabled for the transition phase."
+  }
+
+  assert {
+    condition     = length(setsubtract(toset(var.cluster_public_access_cidrs), toset(aws_eks_cluster.this.vpc_config[0].public_access_cidrs))) == 0
+    error_message = "The EKS public API endpoint must be restricted to the configured public access CIDRs."
+  }
+
+  assert {
+    condition     = !contains(aws_eks_cluster.this.vpc_config[0].public_access_cidrs, "0.0.0.0/0")
+    error_message = "The EKS public API endpoint must not allow 0.0.0.0/0."
   }
 
   assert {

@@ -23,6 +23,16 @@ output "aws_node_termination_handler_release_name" {
   value       = module.k8s_base.aws_node_termination_handler_release_name
 }
 
+output "aws_load_balancer_controller_release_name" {
+  description = "Helm release name for AWS Load Balancer Controller."
+  value       = module.k8s_base.aws_load_balancer_controller_release_name
+}
+
+output "aws_load_balancer_controller_role_arn" {
+  description = "IAM role ARN used by AWS Load Balancer Controller IRSA."
+  value       = aws_iam_role.aws_load_balancer_controller.arn
+}
+
 output "ingress_release_name" {
   description = "Helm release name for ingress-nginx."
   value       = module.k8s_base.ingress_release_name
