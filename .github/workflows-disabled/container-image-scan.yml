@@ -1,0 +1,103 @@
+name: Container Image Vulnerability Scan
+
+on:
+  pull_request:
+    paths:
+      - "manifests/**"
+      - ".github/workflows/container-image-scan.yml"
+      - ".trivyignore"
+  push:
+    branches:
+      - main
+    paths:
+      - "manifests/**"
+      - ".github/workflows/container-image-scan.yml"
+      - ".trivyignore"
+  schedule:
+    - cron: "0 18 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  trivy-image-scan:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            image: ealen/echo-server
+          - name: web
+            image: nginx:1.27.5
+          - name: db
+            image: redis:7
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Generate JSON report
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ matrix.image }}
+          format: json
+          output: trivy-${{ matrix.name }}.json
+          exit-code: "0"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+          version: v0.70.0
+          trivyignores: .trivyignore
+
+      - name: Generate SARIF report
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ matrix.image }}
+          format: sarif
+          output: trivy-${{ matrix.name }}.sarif
+          exit-code: "0"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          limit-severities-for-sarif: true
+          version: v0.70.0
+          skip-setup-trivy: true
+          trivyignores: .trivyignore
+
+      - name: Upload Trivy reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-${{ matrix.name }}-reports
+          path: |
+            trivy-${{ matrix.name }}.json
+            trivy-${{ matrix.name }}.sarif
+          retention-days: 30
+
+      - name: Upload SARIF to GitHub Code Scanning
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-${{ matrix.name }}.sarif
+          category: trivy-${{ matrix.name }}
+
+      - name: Fail on HIGH or CRITICAL vulnerabilities
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: ${{ matrix.image }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: os,library
+          severity: CRITICAL,HIGH
+          version: v0.70.0
+          skip-setup-trivy: true
+          trivyignores: .trivyignore
