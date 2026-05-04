@@ -17,11 +17,11 @@ resource "kubernetes_namespace_v1" "teams" {
 }
 
 resource "kubernetes_resource_quota" "teams" {
-  for_each = kubernetes_namespace_v1.teams
+  for_each = toset(var.team_names)
 
   metadata {
     name      = "team-quota"
-    namespace = each.value.metadata[0].name
+    namespace = each.value
   }
 
   spec {
@@ -36,11 +36,11 @@ resource "kubernetes_resource_quota" "teams" {
 }
 
 resource "kubernetes_limit_range" "teams" {
-  for_each = kubernetes_namespace_v1.teams
+  for_each = toset(var.team_names)
 
   metadata {
     name      = "team-limit-range"
-    namespace = each.value.metadata[0].name
+    namespace = each.value
   }
 
   spec {
