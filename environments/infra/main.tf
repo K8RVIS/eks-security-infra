@@ -26,4 +26,20 @@ module "eks" {
   node_ami_type               = var.node_ami_type
   node_group                  = var.node_group
   default_tags                = var.default_tags
+
+  authentication_mode = "API_AND_CONFIG_MAP"
+  access_entries = {
+    teamc_user = {
+      principal_arn = var.user_iam_arn
+      policy_associations = {
+        admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
+  
 }
