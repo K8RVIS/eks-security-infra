@@ -33,18 +33,19 @@ variable "node_subnet_ids" {
   }
 }
 
-variable "cluster_public_access_cidrs" {
-  description = "CIDR blocks allowed to access the EKS public API endpoint."
+variable "cluster_private_endpoint_access_cidrs" {
+  description = "Private CIDR blocks allowed to access the EKS private API endpoint through the cluster security group."
   type        = list(string)
+  default     = []
 
   validation {
-    condition     = length(var.cluster_public_access_cidrs) > 0
-    error_message = "At least one CIDR must be supplied for the EKS public API endpoint."
+    condition     = alltrue([for cidr in var.cluster_private_endpoint_access_cidrs : can(cidrhost(cidr, 0))])
+    error_message = "Each private endpoint access CIDR must be a valid CIDR block."
   }
 
   validation {
-    condition     = !contains(var.cluster_public_access_cidrs, "0.0.0.0/0") && !contains(var.cluster_public_access_cidrs, "::/0")
-    error_message = "Do not allow 0.0.0.0/0 or ::/0 for the EKS public API endpoint."
+    condition     = !contains(var.cluster_private_endpoint_access_cidrs, "0.0.0.0/0") && !contains(var.cluster_private_endpoint_access_cidrs, "::/0")
+    error_message = "Do not allow 0.0.0.0/0 or ::/0 to the EKS private API endpoint."
   }
 }
 

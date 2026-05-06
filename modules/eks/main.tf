@@ -108,8 +108,7 @@ resource "aws_eks_cluster" "this" {
   vpc_config {
     subnet_ids              = var.cluster_subnet_ids
     endpoint_private_access = true
-    endpoint_public_access  = true
-    public_access_cidrs     = var.cluster_public_access_cidrs
+    endpoint_public_access  = false
   }
 
   depends_on = [
@@ -122,6 +121,18 @@ resource "aws_eks_cluster" "this" {
       Name = local.cluster_name
     }
   )
+}
+
+resource "aws_security_group_rule" "cluster_private_endpoint_ingress" {
+  for_each = toset(var.cluster_private_endpoint_access_cidrs)
+
+  type              = "ingress"
+  security_group_id = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+  protocol          = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_blocks       = [each.value]
+  description       = "Allow private EKS API endpoint access from ${each.value}"
 }
 
 resource "aws_launch_template" "node_group" {
