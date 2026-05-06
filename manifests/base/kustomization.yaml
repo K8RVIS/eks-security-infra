@@ -6,3 +6,4 @@ resources:
   - web
   - api
   - db
+  - network-policies

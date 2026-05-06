@@ -228,3 +228,30 @@ resource "aws_eks_addon" "ebs_csi_driver" {
     }
   )
 }
+
+resource "aws_eks_addon" "vpc_cni" {
+  cluster_name = aws_eks_cluster.this.name
+  addon_name   = "vpc-cni"
+
+  configuration_values = jsonencode({
+    enableNetworkPolicy = "true"
+    nodeAgent = {
+      healthProbeBindAddr = "8163"
+      metricsBindAddr     = "8162"
+    }
+  })
+
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "PRESERVE"
+
+  depends_on = [
+    aws_eks_node_group.this,
+  ]
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.cluster_name}-vpc-cni"
+    }
+  )
+}

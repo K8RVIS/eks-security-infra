@@ -57,3 +57,35 @@ resource "kubernetes_limit_range" "teams" {
     }
   }
 }
+
+resource "kubernetes_network_policy_v1" "default_deny_ingress" {
+  for_each = toset(var.team_names)
+
+  metadata {
+    name      = "default-deny-ingress"
+    namespace = each.value
+  }
+
+  spec {
+    pod_selector {}
+    policy_types = ["Ingress"]
+  }
+
+  depends_on = [kubernetes_namespace_v1.teams]
+}
+
+resource "kubernetes_network_policy_v1" "default_deny_egress" {
+  for_each = toset(var.team_names)
+
+  metadata {
+    name      = "default-deny-egress"
+    namespace = each.value
+  }
+
+  spec {
+    pod_selector {}
+    policy_types = ["Egress"]
+  }
+
+  depends_on = [kubernetes_namespace_v1.teams]
+}

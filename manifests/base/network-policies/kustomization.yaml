@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - allow-dns-egress.yaml
+  - allow-web-ingress-from-vpc.yaml
+  - allow-web-egress-to-api.yaml
+  - allow-api-ingress-from-web.yaml
+  - allow-api-egress-to-db.yaml
+  - allow-db-ingress-from-api.yaml
