@@ -38,11 +38,6 @@ variable "private_subnet_cidrs" {
   type        = list(string)
 }
 
-variable "cluster_public_access_cidrs" {
-  description = "CIDR blocks allowed to access the infra EKS public API endpoint."
-  type        = list(string)
-}
-
 variable "fck_nat_instance_type" {
   description = "Instance type for the fck-nat instance."
   type        = string
