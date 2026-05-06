@@ -4,7 +4,7 @@ metadata:
   name: api
   labels:
     app.kubernetes.io/name: api
-    training.k8rvis.io/security-baseline: insecure
+    app.kubernetes.io/version: "1.0"
 spec:
   replicas: 1
   selector:
@@ -14,13 +14,20 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: api
-        training.k8rvis.io/security-baseline: insecure
     spec:
       serviceAccountName: default
-      automountServiceAccountToken: true
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        fsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: api
           image: ealen/echo-server
+          imagePullPolicy: Always
           env:
             - name: REDIS_URL
               value: redis://:training-password@db:6379/0
@@ -37,3 +44,37 @@ spec:
           ports:
             - containerPort: 80
               name: http
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
