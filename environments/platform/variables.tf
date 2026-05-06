@@ -170,5 +170,5 @@ variable "gitops_applications_base_path" {
 variable "team_names" {
   description = "Team namespace names and matching ArgoCD application names."
   type        = list(string)
-  default     = ["team-a", "team-b", "team-c", "team-d"]
+  default     = ["team-a", "team-b", "team-c", "team-d","team-dev"]
 }

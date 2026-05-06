@@ -6,5 +6,5 @@ variable "project_name" {
 variable "team_names" {
   description = "Team namespace names to create."
   type        = list(string)
-  default     = ["team-a", "team-b", "team-c", "team-d"]
+  default     = ["team-a", "team-b", "team-c", "team-d", "team-dev"]
 }
