@@ -20,6 +20,13 @@ private_subnet_cidrs = [
   "10.0.20.0/24",
 ]
 
+cluster_private_endpoint_access_cidrs = [
+  "172.31.0.0/16",
+]
+
+vpn_vpc_id   = "vpc-096c2102f9e82e7e2"
+vpn_vpc_cidr = "172.31.0.0/16"
+
 fck_nat_instance_type = "t4g.nano"
 
 default_tags = {

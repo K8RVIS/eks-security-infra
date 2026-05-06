@@ -16,13 +16,14 @@ module "vpc" {
 module "eks" {
   source = "../../modules/eks"
 
-  project_name       = var.project_name
-  environment        = var.environment
-  owner              = var.owner
-  cluster_subnet_ids = module.vpc.private_subnet_ids
-  node_subnet_ids    = module.vpc.public_subnet_ids
-  kubernetes_version = var.kubernetes_version
-  node_ami_type      = var.node_ami_type
-  node_group         = var.node_group
-  default_tags       = var.default_tags
+  project_name                          = var.project_name
+  environment                           = var.environment
+  owner                                 = var.owner
+  cluster_subnet_ids                    = module.vpc.private_subnet_ids
+  node_subnet_ids                       = module.vpc.public_subnet_ids
+  cluster_private_endpoint_access_cidrs = var.cluster_private_endpoint_access_cidrs
+  kubernetes_version                    = var.kubernetes_version
+  node_ami_type                         = var.node_ami_type
+  node_group                            = var.node_group
+  default_tags                          = var.default_tags
 }
