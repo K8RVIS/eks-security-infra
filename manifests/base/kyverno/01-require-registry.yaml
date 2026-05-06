@@ -4,7 +4,7 @@ metadata:
   name: require-private-registry
   namespace: kyverno
 spec:
-  validationFailureAction: enforce
+  validationFailureAction: Enforce
   background: true
   rules:
   - name: validate-registry
@@ -14,56 +14,10 @@ spec:
         - Pod
     validate:
       message: "Private ECR registry만 허용됩니다. Public registry 이미지는 사용할 수 없습니다."
-      pattern:
-        spec:
-          containers:
-          - image: !anyOf
-            - "*.dkr.ecr.*.amazonaws.com/*"
-            - "*.dkr.ecr.*.amazonaws.com.cn/*"
       anyPattern:
       - spec:
           containers:
           - image: "*.dkr.ecr.*.amazonaws.com/*"
       - spec:
           containers:
-          - image: "*.dkr.ecr.*.amazonaws.com.cn/*"
-  - name: validate-init-containers
-    match:
-      resources:
-        kinds:
-        - Pod
-    validate:
-      message: "Init containers도 Private ECR registry만 허용됩니다."
-      pattern:
-        spec:
-          initContainers:
-          - image: !anyOf
-            - "*.dkr.ecr.*.amazonaws.com/*"
-            - "*.dkr.ecr.*.amazonaws.com.cn/*"
-      anyPattern:
-      - spec:
-          initContainers:
-          - image: "*.dkr.ecr.*.amazonaws.com/*"
-      - spec:
-          initContainers:
-          - image: "*.dkr.ecr.*.amazonaws.com.cn/*"
-  - name: validate-ephemeral-containers
-    match:
-      resources:
-        kinds:
-        - Pod
-    validate:
-      message: "Ephemeral containers도 Private ECR registry만 허용됩니다."
-      pattern:
-        spec:
-          ephemeralContainers:
-          - image: !anyOf
-            - "*.dkr.ecr.*.amazonaws.com/*"
-            - "*.dkr.ecr.*.amazonaws.com.cn/*"
-      anyPattern:
-      - spec:
-          ephemeralContainers:
-          - image: "*.dkr.ecr.*.amazonaws.com/*"
-      - spec:
-          ephemeralContainers:
           - image: "*.dkr.ecr.*.amazonaws.com.cn/*"
