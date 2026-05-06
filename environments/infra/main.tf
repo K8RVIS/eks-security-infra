@@ -26,4 +26,5 @@ module "eks" {
   node_ami_type               = var.node_ami_type
   node_group                  = var.node_group
   default_tags                = var.default_tags
+  access_entries              = var.access_entries
 }

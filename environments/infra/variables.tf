@@ -85,3 +85,12 @@ variable "node_group" {
     disk_size_gb   = 20
   }
 }
+
+variable "access_entries" {
+  description = "Map of IAM principals and their EKS access policies."
+  type = map(object({
+    principal_arn = string
+    policy_arn    = string
+  }))
+  default = {}
+}
