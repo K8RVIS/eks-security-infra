@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - runtime-secrets
+  - storage
   - web
   - api
   - db

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lab1-ebs-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: lab1-gp3-unencrypted
+  resources:
+    requests:
+      storage: 1Gi

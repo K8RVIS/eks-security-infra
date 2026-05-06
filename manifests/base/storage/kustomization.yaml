@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - encrypted-gp3-storageclass.yaml
+  - lab1-unencrypted-storageclass.yaml
+  - lab1-pvc.yaml
+  - lab2-default-encryption-storageclass.yaml
+  - lab2-pvc.yaml
+  - lab2-pod.yaml
