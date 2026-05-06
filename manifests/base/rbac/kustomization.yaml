@@ -2,8 +2,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - runtime-secrets
-  - rbac
-  - web
-  - api
-  - db
+  - serviceaccount.yaml
+  - role.yaml
+  - rolebinding.yaml
