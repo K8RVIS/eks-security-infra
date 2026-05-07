@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: team-c
+  labels:
+    pod-security.kubernetes.io/enforce: baseline # 차단
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: baseline # 경고
+    pod-security.kubernetes.io/warn-version: latest

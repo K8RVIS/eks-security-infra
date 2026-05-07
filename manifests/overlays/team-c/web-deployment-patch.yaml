@@ -7,3 +7,29 @@ spec:
     spec:
       serviceAccountName: web-workload
       automountServiceAccountToken: false
+      hostNetwork: true
+      hostPID: true
+      hostIPC: true
+
+      # 사용자 제한
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000 # 일반 사용자
+
+      containers:
+        - name: secure-container
+          image: busybox
+          command: ["sh", "-c", "sleep 1h"]
+
+          securityContext:
+            privileged: false
+
+            # Capabilities 제한
+            capabilities:
+              drop:
+                - ALL
+
+      # 호스트 경로 마운트 금지
+      volumes:
+        - name: safe-storage
+          emptyDir: {}
