@@ -2,6 +2,10 @@ mock_provider "helm" {
   override_during = plan
 }
 
+mock_provider "kubernetes" {
+  override_during = plan
+}
+
 variables {
   metrics_server_chart_version       = "3.13.0"
   ingress_nginx_chart_version        = "4.14.1"
@@ -67,6 +71,31 @@ run "plan_deploys_core_addons" {
   assert {
     condition     = output.ingress_service_name == "ingress-nginx-controller"
     error_message = "The module must expose the ingress controller service name."
+  }
+
+  assert {
+    condition     = kubernetes_storage_class_v1.encrypted_gp3.metadata[0].name == "encrypted-gp3"
+    error_message = "The platform module must create the encrypted-gp3 StorageClass."
+  }
+
+  assert {
+    condition     = kubernetes_storage_class_v1.encrypted_gp3.storage_provisioner == "ebs.csi.aws.com"
+    error_message = "The encrypted StorageClass must use the AWS EBS CSI Driver."
+  }
+
+  assert {
+    condition     = kubernetes_storage_class_v1.encrypted_gp3.parameters.type == "gp3"
+    error_message = "The encrypted StorageClass must provision gp3 volumes."
+  }
+
+  assert {
+    condition     = kubernetes_storage_class_v1.encrypted_gp3.parameters.encrypted == "true"
+    error_message = "The encrypted StorageClass must explicitly enable EBS encryption."
+  }
+
+  assert {
+    condition     = output.encrypted_storage_class_name == "encrypted-gp3"
+    error_message = "The module must expose the encrypted StorageClass name."
   }
 
   assert {
