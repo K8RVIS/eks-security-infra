@@ -33,14 +33,22 @@ variable "node_subnet_ids" {
   }
 }
 
-variable "cluster_public_access_cidrs" {
-  description = "CIDR blocks allowed to access the EKS public API endpoint."
-  type        = list(string)
+variable "cluster_endpoint_private_access" {
+  description = "Whether the EKS private API endpoint is enabled."
+  type        = bool
+  default     = true
+}
 
-  validation {
-    condition     = length(var.cluster_public_access_cidrs) > 0
-    error_message = "At least one CIDR must be supplied for the EKS public API endpoint."
-  }
+variable "cluster_endpoint_public_access" {
+  description = "Whether the EKS public API endpoint is enabled."
+  type        = bool
+  default     = false
+}
+
+variable "cluster_public_access_cidrs" {
+  description = "CIDR blocks allowed to access the EKS public API endpoint when public access is enabled."
+  type        = list(string)
+  default     = []
 
   validation {
     condition     = !contains(var.cluster_public_access_cidrs, "0.0.0.0/0") && !contains(var.cluster_public_access_cidrs, "::/0")

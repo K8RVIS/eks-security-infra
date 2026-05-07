@@ -53,6 +53,16 @@ output "cluster_security_group_id" {
   value       = module.eks.cluster_security_group_id
 }
 
+output "vpn_private_api_access_enabled" {
+  description = "Whether VPN/self-hosted runner private API access resources are enabled."
+  value       = var.enable_vpn_private_api_access
+}
+
+output "vpn_to_eks_peering_connection_id" {
+  description = "VPC peering connection ID between the VPN/self-hosted runner VPC and the EKS VPC."
+  value       = var.enable_vpn_private_api_access ? aws_vpc_peering_connection.vpn_to_eks[0].id : null
+}
+
 output "node_group_name" {
   description = "Name of the default infra EKS managed node group."
   value       = module.eks.node_group_name

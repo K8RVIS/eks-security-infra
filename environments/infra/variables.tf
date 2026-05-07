@@ -41,6 +41,19 @@ variable "private_subnet_cidrs" {
 variable "cluster_public_access_cidrs" {
   description = "CIDR blocks allowed to access the infra EKS public API endpoint."
   type        = list(string)
+  default     = []
+}
+
+variable "cluster_endpoint_private_access" {
+  description = "Whether the infra EKS private API endpoint is enabled."
+  type        = bool
+  default     = true
+}
+
+variable "cluster_endpoint_public_access" {
+  description = "Whether the infra EKS public API endpoint is enabled."
+  type        = bool
+  default     = false
 }
 
 variable "fck_nat_instance_type" {
@@ -84,4 +97,28 @@ variable "node_group" {
     max_size       = 4
     disk_size_gb   = 20
   }
+}
+
+variable "enable_vpn_private_api_access" {
+  description = "Whether to connect the VPN/self-hosted runner VPC to the EKS private API endpoint."
+  type        = bool
+  default     = false
+}
+
+variable "vpn_vpc_id" {
+  description = "VPC ID where the VPN/self-hosted runner is running."
+  type        = string
+  default     = null
+}
+
+variable "vpn_vpc_cidr" {
+  description = "CIDR block of the VPN/self-hosted runner VPC."
+  type        = string
+  default     = null
+}
+
+variable "vpn_route_table_ids" {
+  description = "Route table IDs used by the VPN/self-hosted runner subnets."
+  type        = list(string)
+  default     = []
 }

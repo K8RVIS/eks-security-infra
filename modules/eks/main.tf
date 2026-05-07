@@ -107,9 +107,21 @@ resource "aws_eks_cluster" "this" {
 
   vpc_config {
     subnet_ids              = var.cluster_subnet_ids
-    endpoint_private_access = true
-    endpoint_public_access  = true
-    public_access_cidrs     = var.cluster_public_access_cidrs
+    endpoint_private_access = var.cluster_endpoint_private_access
+    endpoint_public_access  = var.cluster_endpoint_public_access
+    public_access_cidrs     = var.cluster_endpoint_public_access ? var.cluster_public_access_cidrs : null
+  }
+
+  lifecycle {
+    precondition {
+      condition     = var.cluster_endpoint_private_access || var.cluster_endpoint_public_access
+      error_message = "At least one EKS API endpoint access mode must be enabled."
+    }
+
+    precondition {
+      condition     = !var.cluster_endpoint_public_access || length(var.cluster_public_access_cidrs) > 0
+      error_message = "Public endpoint access requires at least one public access CIDR."
+    }
   }
 
   depends_on = [
