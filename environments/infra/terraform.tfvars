@@ -21,11 +21,9 @@ private_subnet_cidrs = [
 ]
 
 cluster_endpoint_private_access = true
-cluster_endpoint_public_access = false
+cluster_endpoint_public_access  = false
 
-cluster_public_access_cidrs = [
-  "13.125.215.119/32",
-]
+cluster_public_access_cidrs = []
 
 enable_vpn_private_api_access = true
 
