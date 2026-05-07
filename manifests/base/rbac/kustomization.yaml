@@ -4,4 +4,8 @@ kind: Kustomization
 resources:
   - serviceaccount.yaml
   - role.yaml
+  - role-api.yaml
+  - role-db.yaml
   - rolebinding.yaml
+  - rolebinding-api.yaml
+  - rolebinding-db.yaml
