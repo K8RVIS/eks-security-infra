@@ -20,7 +20,7 @@ module "eks" {
   environment                 = var.environment
   owner                       = var.owner
   cluster_subnet_ids          = module.vpc.private_subnet_ids
-  node_subnet_ids             = module.vpc.public_subnet_ids
+  node_subnet_ids             = module.vpc.private_subnet_ids
   cluster_public_access_cidrs = var.cluster_public_access_cidrs
   kubernetes_version          = var.kubernetes_version
   node_ami_type               = var.node_ami_type

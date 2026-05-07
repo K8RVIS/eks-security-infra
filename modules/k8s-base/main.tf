@@ -95,7 +95,10 @@ resource "helm_release" "ingress_nginx" {
       service:
         type: LoadBalancer
         annotations:
+          service.beta.kubernetes.io/aws-load-balancer-type: external
+          service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: instance
           service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+
     EOT
   ]
 
