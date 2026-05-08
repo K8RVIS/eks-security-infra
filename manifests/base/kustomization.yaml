@@ -3,7 +3,6 @@ kind: Kustomization
 
 resources:
   - kyverno
-  - network-policies
   - web
   - api
   - db
