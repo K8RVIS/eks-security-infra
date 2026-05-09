@@ -4,7 +4,7 @@ metadata:
   name: db
   labels:
     app.kubernetes.io/name: db
-    training.k8rvis.io/security-baseline: insecure
+    training.k8rvis.io/security-baseline: baseline
 spec:
   serviceName: db
   replicas: 1
@@ -15,7 +15,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: db
-        training.k8rvis.io/security-baseline: insecure
+        training.k8rvis.io/security-baseline: baseline
     spec:
       securityContext:
         fsGroup: 999
@@ -58,7 +58,7 @@ spec:
         name: redis-data
         labels:
           app.kubernetes.io/name: db
-          training.k8rvis.io/security-baseline: insecure
+          training.k8rvis.io/security-baseline: baseline
       spec:
         storageClassName: encrypted-gp3
         accessModes:
