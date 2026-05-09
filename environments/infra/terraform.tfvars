@@ -42,3 +42,6 @@ node_group = {
   max_size       = 4
   disk_size_gb   = 20
 }
+user_iam_arn= {
+  teamc_user =""
+}
