@@ -95,3 +95,14 @@ variable "default_tags" {
   type        = map(string)
   default     = {}
 }
+variable "access_entries" {
+  description = "EKS cluster에 접속할 IAM user 및 권한 mapping"
+  type        = any
+  default     = {}
+}
+
+variable "authentication_mode" {
+  description = "EKS 클러스터 인증 모드"
+  type        = string
+  default     = "API_AND_CONFIG_MAP"
+}
