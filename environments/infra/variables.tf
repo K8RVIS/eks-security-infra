@@ -38,8 +38,8 @@ variable "private_subnet_cidrs" {
   type        = list(string)
 }
 
-variable "cluster_public_access_cidrs" {
-  description = "CIDR blocks allowed to access the infra EKS public API endpoint."
+variable "cluster_private_endpoint_access_cidrs" {
+  description = "Private CIDR blocks allowed to access the infra EKS private API endpoint."
   type        = list(string)
 }
 

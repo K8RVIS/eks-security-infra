@@ -108,8 +108,7 @@ resource "aws_eks_cluster" "this" {
   vpc_config {
     subnet_ids              = var.cluster_subnet_ids
     endpoint_private_access = true
-    endpoint_public_access  = true
-    public_access_cidrs     = var.cluster_public_access_cidrs
+    endpoint_public_access  = false
   }
 
   depends_on = [
@@ -124,24 +123,16 @@ resource "aws_eks_cluster" "this" {
   )
 }
 
-resource "aws_eks_addon" "vpc_cni" {
-  cluster_name                = aws_eks_cluster.this.name
-  addon_name                  = "vpc-cni"
-  configuration_values        = jsonencode({ enableNetworkPolicy = "true" })
-  resolve_conflicts_on_create = "OVERWRITE"
-  resolve_conflicts_on_update = "OVERWRITE"
+resource "aws_security_group_rule" "cluster_private_endpoint_ingress" {
+  for_each = toset(var.cluster_private_endpoint_access_cidrs)
 
-  depends_on = [
-    aws_eks_cluster.this,
-    aws_iam_role_policy_attachment.node_cni_policy,
-  ]
-
-  tags = merge(
-    local.common_tags,
-    {
-      Name = "${local.cluster_name}-vpc-cni"
-    }
-  )
+  type              = "ingress"
+  security_group_id = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+  protocol          = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_blocks       = [each.value]
+  description       = "Allow private EKS API endpoint access from ${each.value}"
 }
 
 resource "aws_launch_template" "node_group" {
