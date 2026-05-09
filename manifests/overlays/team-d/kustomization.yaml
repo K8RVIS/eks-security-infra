@@ -9,6 +9,7 @@ resources:
   - api-serviceaccount.yaml
   - web-serviceaccount.yaml
   - db-serviceaccount.yaml
+  - network-policies.yaml
 
 patches:
   - path: web-ingress-patch.yaml
