@@ -4,6 +4,27 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 2.0"
     }
+
+    kubernetes = {
+      source  = "hashicorp/kubernetes"
+      version = "~> 2.0"
+    }
+  }
+}
+
+resource "kubernetes_storage_class_v1" "encrypted_gp3" {
+  metadata {
+    name = "encrypted-gp3"
+  }
+
+  storage_provisioner    = "ebs.csi.aws.com"
+  reclaim_policy         = "Delete"
+  volume_binding_mode    = "WaitForFirstConsumer"
+  allow_volume_expansion = true
+
+  parameters = {
+    type      = "gp3"
+    encrypted = "true"
   }
 }
 

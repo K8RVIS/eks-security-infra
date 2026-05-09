@@ -63,6 +63,11 @@ output "external_secrets_role_arn" {
   value       = aws_iam_role.external_secrets.arn
 }
 
+output "encrypted_storage_class_name" {
+  description = "Encrypted gp3 StorageClass name for EBS-backed workload PVCs."
+  value       = module.k8s_base.encrypted_storage_class_name
+}
+
 output "team_namespace_names" {
   description = "Created team namespace names."
   value       = module.namespaces.namespace_names
