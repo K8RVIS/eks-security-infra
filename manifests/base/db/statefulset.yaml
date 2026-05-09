@@ -60,7 +60,7 @@ spec:
           app.kubernetes.io/name: db
           training.k8rvis.io/security-baseline: insecure
       spec:
-        storageClassName: gp2
+        storageClassName: encrypted-gp3
         accessModes:
           - ReadWriteOnce
         resources:

@@ -42,3 +42,8 @@ output "external_secrets_namespace" {
   description = "Namespace where External Secrets Operator is deployed."
   value       = helm_release.external_secrets.namespace
 }
+
+output "encrypted_storage_class_name" {
+  description = "Encrypted gp3 StorageClass name for EBS-backed workload PVCs."
+  value       = kubernetes_storage_class_v1.encrypted_gp3.metadata[0].name
+}
