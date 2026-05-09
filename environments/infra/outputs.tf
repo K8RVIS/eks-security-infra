@@ -23,9 +23,24 @@ output "fck_nat_instance_id" {
   value       = module.vpc.fck_nat_instance_id
 }
 
+output "fck_nat_subnet_id" {
+  description = "Subnet ID where the fck-nat instance is placed."
+  value       = module.vpc.fck_nat_subnet_id
+}
+
+output "fck_nat_primary_network_interface_id" {
+  description = "Primary network interface ID of the fck-nat instance."
+  value       = module.vpc.fck_nat_primary_network_interface_id
+}
+
 output "fck_nat_ami_id" {
   description = "Automatically selected AMI ID for the fck-nat instance."
   value       = module.vpc.fck_nat_ami_id
+}
+
+output "private_default_route_network_interface_id" {
+  description = "Network interface ID targeted by the private default route."
+  value       = module.vpc.private_default_route_network_interface_id
 }
 
 output "cluster_name" {
@@ -53,6 +68,11 @@ output "cluster_security_group_id" {
   value       = module.eks.cluster_security_group_id
 }
 
+output "cluster_subnet_ids" {
+  description = "Subnet IDs used by the infra EKS control plane."
+  value       = module.eks.cluster_subnet_ids
+}
+
 output "vpn_vpc_peering_connection_id" {
   description = "VPC peering connection ID between the infra VPC and VPN VPC."
   value       = module.vpn_peering.vpc_peering_connection_id
@@ -66,4 +86,9 @@ output "node_group_name" {
 output "node_group_arn" {
   description = "ARN of the default infra EKS managed node group."
   value       = module.eks.node_group_arn
+}
+
+output "node_subnet_ids" {
+  description = "Subnet IDs used by the default infra EKS managed node group."
+  value       = module.eks.node_subnet_ids
 }

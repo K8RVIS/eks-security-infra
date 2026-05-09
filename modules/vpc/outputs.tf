@@ -43,7 +43,22 @@ output "fck_nat_instance_id" {
   value       = aws_instance.fck_nat.id
 }
 
+output "fck_nat_subnet_id" {
+  description = "Subnet ID where the fck-nat instance is placed."
+  value       = aws_instance.fck_nat.subnet_id
+}
+
+output "fck_nat_primary_network_interface_id" {
+  description = "Primary network interface ID of the fck-nat instance."
+  value       = aws_instance.fck_nat.primary_network_interface_id
+}
+
 output "fck_nat_ami_id" {
   description = "Automatically selected AMI ID for the fck-nat instance."
   value       = data.aws_ami.fck_nat.id
+}
+
+output "private_default_route_network_interface_id" {
+  description = "Network interface ID targeted by the private default route."
+  value       = aws_route.private_default.network_interface_id
 }

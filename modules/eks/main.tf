@@ -108,8 +108,7 @@ resource "aws_eks_cluster" "this" {
   vpc_config {
     subnet_ids              = var.cluster_subnet_ids
     endpoint_private_access = true
-    endpoint_public_access  = true
-    public_access_cidrs     = var.cluster_public_access_cidrs
+    endpoint_public_access  = false
   }
 
   depends_on = [
@@ -122,6 +121,18 @@ resource "aws_eks_cluster" "this" {
       Name = local.cluster_name
     }
   )
+}
+
+resource "aws_security_group_rule" "cluster_private_endpoint_ingress" {
+  for_each = toset(var.cluster_private_endpoint_access_cidrs)
+
+  type              = "ingress"
+  security_group_id = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+  protocol          = "tcp"
+  from_port         = 443
+  to_port           = 443
+  cidr_blocks       = [each.value]
+  description       = "Allow private EKS API endpoint access from ${each.value}"
 }
 
 resource "aws_launch_template" "node_group" {
@@ -199,6 +210,7 @@ resource "aws_eks_node_group" "this" {
   }
 
   depends_on = [
+    aws_eks_addon.vpc_cni,
     aws_iam_role_policy_attachment.node_worker_policy,
     aws_iam_role_policy_attachment.node_cni_policy,
     aws_iam_role_policy_attachment.node_ecr_policy,
@@ -227,4 +239,44 @@ resource "aws_eks_addon" "ebs_csi_driver" {
       Name = "${local.cluster_name}-ebs-csi-driver"
     }
   )
+}
+# 클러스터에 등록
+resource "aws_eks_access_entry" "this" {
+  for_each = var.access_entries
+
+  cluster_name      = aws_eks_cluster.this.name
+  principal_arn     = each.value.principal_arn
+  type              = "STANDARD"
+  depends_on = [
+    aws_eks_cluster.this
+  ]
+}
+
+# 등록된 신분에 실제 권한 정책 연결
+resource "aws_eks_access_policy_association" "this" {
+  for_each = {
+    for pair in flatten([
+      for name, entry in var.access_entries : [
+        for policy_name, policy in entry.policy_associations : {
+          entry_name  = name
+          policy_name = policy_name
+          principal   = entry.principal_arn
+          policy_arn  = policy.policy_arn
+          scope       = policy.access_scope
+        }
+      ]
+    ]) : "${pair.entry_name}-${pair.policy_name}" => pair
+  }
+
+  cluster_name  = aws_eks_cluster.this.name
+  policy_arn    = each.value.policy_arn
+  principal_arn = each.value.principal
+
+  access_scope {
+    type       = each.value.scope.type
+    namespaces = lookup(each.value.scope, "namespaces", null)
+  }
+  depends_on = [
+    aws_eks_access_entry.this
+  ]
 }

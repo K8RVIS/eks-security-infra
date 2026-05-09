@@ -16,14 +16,29 @@ module "vpc" {
 module "eks" {
   source = "../../modules/eks"
 
-  project_name                          = var.project_name
-  environment                           = var.environment
-  owner                                 = var.owner
-  cluster_subnet_ids                    = module.vpc.private_subnet_ids
-  node_subnet_ids                       = module.vpc.public_subnet_ids
+  project_name                = var.project_name
+  environment                 = var.environment
+  owner                       = var.owner
+  cluster_subnet_ids          = module.vpc.private_subnet_ids
+  node_subnet_ids             = module.vpc.private_subnet_ids
   cluster_private_endpoint_access_cidrs = var.cluster_private_endpoint_access_cidrs
-  kubernetes_version                    = var.kubernetes_version
-  node_ami_type                         = var.node_ami_type
-  node_group                            = var.node_group
-  default_tags                          = var.default_tags
+  kubernetes_version          = var.kubernetes_version
+  node_ami_type               = var.node_ami_type
+  node_group                  = var.node_group
+  default_tags                = var.default_tags
+
+  authentication_mode = "API_AND_CONFIG_MAP"
+  access_entries = {
+  for name, arn in var.user_iam_arn : name => {
+    principal_arn = arn
+    policy_associations = {
+      admin = {
+        policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+        access_scope = {
+          type = "cluster"
+        }
+      }
+    }
+  }
+}
 }
