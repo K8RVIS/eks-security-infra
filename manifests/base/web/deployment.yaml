@@ -4,7 +4,7 @@ metadata:
   name: web
   labels:
     app.kubernetes.io/name: web
-    training.k8rvis.io/security-baseline: insecure
+    training.k8rvis.io/security-baseline: baseline
 spec:
   replicas: 1
   selector:
@@ -14,7 +14,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: web
-        training.k8rvis.io/security-baseline: insecure
+        training.k8rvis.io/security-baseline: baseline
     spec:
       containers:
         - name: web

@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - runtime-secrets
+  - rbac
   - web
   - api
   - db

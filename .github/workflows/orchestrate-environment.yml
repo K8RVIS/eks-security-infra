@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   orchestrate:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     env:
       AWS_REGION: ${{ vars.AWS_REGION }}
       AWS_ROLE_TO_ASSUME: ${{ vars.AWS_ROLE_TO_ASSUME }}
@@ -45,10 +45,22 @@ jobs:
       PLATFORM_INFRA_STATE_REGION: ${{ vars.PLATFORM_INFRA_STATE_REGION }}
       ORCHESTRATION_STATE_BUCKET: ${{ vars.ORCHESTRATION_STATE_BUCKET }}
       ORCHESTRATION_STATE_KEY: ${{ vars.ORCHESTRATION_STATE_KEY }}
+      EXPECTED_RUNNER_PUBLIC_IP: 13.125.215.119
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Verify runner public IP
+        run: |
+          set -euo pipefail
+          runner_public_ip="$(curl -fsS https://checkip.amazonaws.com | tr -d '[:space:]')"
+          echo "Runner public IP: ${runner_public_ip}"
+
+          if [ "${runner_public_ip}" != "${EXPECTED_RUNNER_PUBLIC_IP}" ]; then
+            echo "::error::Runner public IP must be ${EXPECTED_RUNNER_PUBLIC_IP} to reach the EKS API endpoint."
+            exit 1
+          fi
 
       - name: Set up Python
         uses: actions/setup-python@v5
