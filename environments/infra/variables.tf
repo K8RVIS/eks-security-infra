@@ -41,6 +41,17 @@ variable "private_subnet_cidrs" {
 variable "cluster_private_endpoint_access_cidrs" {
   description = "Private CIDR blocks allowed to access the infra EKS private API endpoint."
   type        = list(string)
+  default     = []
+}
+
+variable "vpn_vpc_id" {
+  description = "Existing VPN VPC ID peered with the infra VPC for private EKS API access."
+  type        = string
+}
+
+variable "vpn_vpc_cidr" {
+  description = "CIDR block for the existing VPN VPC."
+  type        = string
 }
 
 variable "fck_nat_instance_type" {

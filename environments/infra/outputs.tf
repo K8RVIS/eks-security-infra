@@ -73,6 +73,11 @@ output "cluster_subnet_ids" {
   value       = module.eks.cluster_subnet_ids
 }
 
+output "vpn_vpc_peering_connection_id" {
+  description = "VPC peering connection ID between the infra VPC and VPN VPC."
+  value       = module.vpn_peering.vpc_peering_connection_id
+}
+
 output "node_group_name" {
   description = "Name of the default infra EKS managed node group."
   value       = module.eks.node_group_name
