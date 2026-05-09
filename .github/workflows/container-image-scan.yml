@@ -1,0 +1,104 @@
+name: Container Image Scan
+
+on:
+  pull_request:
+    paths:
+      - "manifests/**"
+      - ".trivyignore"
+      - ".github/workflows/container-image-scan.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "manifests/**"
+  schedule:
+    # Every Monday 02:00 UTC — catches new CVEs on images already in the registry
+    - cron: "0 2 * * 1"
+
+permissions:
+  contents: read
+  security-events: write  # Required to upload SARIF to GitHub Security tab
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Job 1: parse manifests/** and build a dynamic scan matrix
+  # -------------------------------------------------------------------------
+  list-images:
+    name: Extract images from manifests
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.list.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install pyyaml
+        run: pip install pyyaml
+
+      - name: Extract image list
+        id: list
+        run: |
+          images=$(python scripts/list_manifest_images.py manifests --json)
+          echo "matrix={\"image\":$images}" >> "$GITHUB_OUTPUT"
+
+  # -------------------------------------------------------------------------
+  # Job 2: Trivy scan — one job per image (fail-fast: false scans all images)
+  # -------------------------------------------------------------------------
+  scan:
+    name: "Scan: ${{ matrix.image }}"
+    needs: list-images
+    runs-on: ubuntu-latest
+    strategy:
+      matrix: ${{ fromJson(needs.list-images.outputs.matrix) }}
+      fail-fast: false  # Scan all images even if one fails, to see the full picture
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sanitize image name for file paths
+        id: safe
+        run: |
+          name=$(echo "${{ matrix.image }}" | sed 's|[/:]|-|g; s|\.|-|g')
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+
+      # Table output: human-readable, exits 1 on CRITICAL/HIGH → blocks the PR
+      - name: Scan (table) — fail on CRITICAL/HIGH
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ matrix.image }}
+          format: table
+          exit-code: "1"
+          severity: CRITICAL,HIGH
+          ignore-unfixed: false
+          trivyignores: .trivyignore
+          version: v0.70.0
+
+      # SARIF output: always run so results are uploaded even on failure
+      - name: Scan (SARIF) — always
+        if: always()
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ matrix.image }}
+          format: sarif
+          output: trivy-${{ steps.safe.outputs.name }}.sarif
+          severity: CRITICAL,HIGH
+          ignore-unfixed: false
+          trivyignores: .trivyignore
+          version: v0.70.0
+
+      - name: Upload SARIF to GitHub Security tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-${{ steps.safe.outputs.name }}.sarif
+          category: trivy-${{ steps.safe.outputs.name }}
+
+      - name: Archive scan results (30-day retention)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-${{ steps.safe.outputs.name }}
+          path: trivy-${{ steps.safe.outputs.name }}.sarif
+          retention-days: 30

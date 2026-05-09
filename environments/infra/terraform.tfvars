@@ -48,3 +48,7 @@ node_group = {
 user_iam_arn= {
   teamc_user =""
 }
+
+ecr_repository_names     = ["web", "api", "db"]
+ecr_max_image_count      = 10
+ecr_untagged_expiry_days = 7
