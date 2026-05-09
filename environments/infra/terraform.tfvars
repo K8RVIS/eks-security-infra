@@ -42,4 +42,6 @@ node_group = {
   max_size       = 4
   disk_size_gb   = 20
 }
-user_iam_arn= "arn:aws:iam::357542025037:role/aws-reserved/sso.amazonaws.com/ap-northeast-2/AWSReservedSSO_AdministratorAccess_3a39e04d118e4347"
+user_iam_arn= {
+  teamc_user="arn:aws:iam::357542025037:role/aws-reserved/sso.amazonaws.com/ap-northeast-2/AWSReservedSSO_AdministratorAccess_3a39e04d118e4347"
+}

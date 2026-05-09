@@ -29,17 +29,18 @@ module "eks" {
 
   authentication_mode = "API_AND_CONFIG_MAP"
   access_entries = {
-    teamc_user = {
-      principal_arn = var.user_iam_arn
-      policy_associations = {
-        admin = {
-          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
-          access_scope = {
-            type = "cluster"
-          }
+  for name, arn in var.user_iam_arn : name => {
+    principal_arn = arn
+    policy_associations = {
+      admin = {
+        policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+        access_scope = {
+          type = "cluster"
         }
       }
     }
   }
+}
+
   
 }

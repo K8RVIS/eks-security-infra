@@ -240,9 +240,8 @@ resource "aws_eks_access_entry" "this" {
   ]
 }
 
-# 2. 등록된 신분에 실제 권한 정책 연결
+# 등록된 신분에 실제 권한 정책 연결
 resource "aws_eks_access_policy_association" "this" {
-  # 변수 내의 policy_associations를 모두 찾아서 연결하는 반복문
   for_each = {
     for pair in flatten([
       for name, entry in var.access_entries : [

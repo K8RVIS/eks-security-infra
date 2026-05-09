@@ -88,5 +88,5 @@ variable "node_group" {
 }
 variable "user_iam_arn" {
   description = "EKS 관리자 권한을 부여할 IAM ARN"
-  type        = string
+  type        = map(string)
 }
