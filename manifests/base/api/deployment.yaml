@@ -4,7 +4,7 @@ metadata:
   name: api
   labels:
     app.kubernetes.io/name: api
-    training.k8rvis.io/security-baseline: insecure
+    training.k8rvis.io/security-baseline: baseline
 spec:
   replicas: 1
   selector:
@@ -14,10 +14,10 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: api
-        training.k8rvis.io/security-baseline: insecure
+        training.k8rvis.io/security-baseline: baseline
     spec:
       serviceAccountName: default
-      automountServiceAccountToken: true
+      automountServiceAccountToken: false
       containers:
         - name: api
           image: ealen/echo-server
