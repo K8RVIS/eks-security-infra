@@ -1,7 +1,0 @@
-# Trivy CVE exception list
-# Add CVE IDs here only after security team review and approval.
-# Each entry must include an inline comment with: date, approver, reason.
-# Format: CVE-YYYY-NNNNN  # YYYY-MM-DD | approver | reason
-#
-# Example:
-# CVE-2023-12345  # 2026-01-01 | security-team | no fix available, mitigated by network policy
