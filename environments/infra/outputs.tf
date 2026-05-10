@@ -92,3 +92,18 @@ output "node_subnet_ids" {
   description = "Subnet IDs used by the default infra EKS managed node group."
   value       = module.eks.node_subnet_ids
 }
+
+output "ecr_repository_urls" {
+  description = "Map of short repository name to full ECR repository URL."
+  value       = module.ecr.repository_urls
+}
+
+output "ecr_registry_id" {
+  description = "ECR registry ID (AWS account ID)."
+  value       = module.ecr.registry_id
+}
+
+output "ecr_kms_key_arn" {
+  description = "ARN of the KMS key used for ECR repository encryption."
+  value       = module.ecr.kms_key_arn
+}
