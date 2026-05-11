@@ -103,13 +103,46 @@ jobs:
         run: |
           set -euo pipefail
 
-          if [ -n "${EKS_ACCESS_USER_ARNS_JSON:-}" ]; then
-            {
-              echo "TF_VAR_user_iam_arn<<EOF"
-              echo "${EKS_ACCESS_USER_ARNS_JSON}"
-              echo "EOF"
-            } >> "${GITHUB_ENV}"
-          fi
+          eks_access_user_arns="$(
+            python - <<'PY'
+          import json
+          import os
+          import sys
+
+          raw = os.environ.get("EKS_ACCESS_USER_ARNS_JSON", "").strip()
+          values = {}
+
+          if raw:
+              try:
+                  values = json.loads(raw)
+              except json.JSONDecodeError as exc:
+                  print(f"::error::EKS_ACCESS_USER_ARNS_JSON must be a JSON object: {exc}", file=sys.stderr)
+                  sys.exit(1)
+
+              if not isinstance(values, dict):
+                  print("::error::EKS_ACCESS_USER_ARNS_JSON must be a JSON object mapping names to IAM role/user ARNs.", file=sys.stderr)
+                  sys.exit(1)
+
+          role_to_assume = os.environ.get("AWS_ROLE_TO_ASSUME", "").strip()
+          if role_to_assume:
+              values.setdefault("github_actions", role_to_assume)
+
+          values = {
+              str(name): str(arn).strip()
+              for name, arn in values.items()
+              if str(arn).strip()
+          }
+
+          print(f"EKS access entry principal keys: {', '.join(sorted(values)) or '(none)'}", file=sys.stderr)
+          print(json.dumps(values, separators=(",", ":")))
+          PY
+          )"
+
+          {
+            echo "TF_VAR_user_iam_arn<<EOF"
+            echo "${eks_access_user_arns}"
+            echo "EOF"
+          } >> "${GITHUB_ENV}"
 
       - name: Configure AWS credentials with OIDC
         uses: aws-actions/configure-aws-credentials@v4
