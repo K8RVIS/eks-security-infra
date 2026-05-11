@@ -141,9 +141,10 @@ class TerraformRunner:
 
 
 class EnvironmentOrchestrator:
-    def __init__(self, state_store: Any, terraform_runner: Any):
+    def __init__(self, state_store: Any, terraform_runner: Any, refresh_infra_on_start: bool = False):
         self.state_store = state_store
         self.terraform_runner = terraform_runner
+        self.refresh_infra_on_start = refresh_infra_on_start
 
     def run(self, operation: str, slack_user_id: str, namespace: str, request_id: str) -> dict[str, Any]:
         current_state = self._normalize_state(self.state_store.read_state())
@@ -196,7 +197,11 @@ class EnvironmentOrchestrator:
         next_state["active_users"][slack_user_id] = namespace
         next_state["active_namespaces"] = sorted(set(next_state["active_users"].values()))
 
-        should_apply_infra = current_state.get("infra_status") != "running" or not current_state["active_users"]
+        should_apply_infra = (
+            current_state.get("infra_status") != "running"
+            or not current_state["active_users"]
+            or self.refresh_infra_on_start
+        )
         if should_apply_infra:
             self.terraform_runner.apply_infra()
 
@@ -259,6 +264,7 @@ def main() -> None:
     orchestrator = EnvironmentOrchestrator(
         state_store=build_state_store_from_env(),
         terraform_runner=build_runner_from_env(),
+        refresh_infra_on_start=bool(os.environ.get("TF_VAR_user_iam_arn", "").strip()),
     )
     result = orchestrator.run(
         operation=args.operation,

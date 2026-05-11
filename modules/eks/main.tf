@@ -108,7 +108,7 @@ resource "aws_eks_cluster" "this" {
   access_config {
     authentication_mode = var.authentication_mode
   }
-  
+
   vpc_config {
     subnet_ids              = var.cluster_subnet_ids
     endpoint_private_access = true
@@ -248,9 +248,9 @@ resource "aws_eks_addon" "ebs_csi_driver" {
 resource "aws_eks_access_entry" "this" {
   for_each = var.access_entries
 
-  cluster_name      = aws_eks_cluster.this.name
-  principal_arn     = each.value.principal_arn
-  type              = "STANDARD"
+  cluster_name  = aws_eks_cluster.this.name
+  principal_arn = each.value.principal_arn
+  type          = "STANDARD"
   depends_on = [
     aws_eks_cluster.this
   ]
