@@ -97,6 +97,20 @@ jobs:
             fi
           done
 
+      - name: Export EKS access user ARNs
+        env:
+          EKS_ACCESS_USER_ARNS_JSON: ${{ secrets.EKS_ACCESS_USER_ARNS_JSON }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${EKS_ACCESS_USER_ARNS_JSON:-}" ]; then
+            {
+              echo "TF_VAR_user_iam_arn<<EOF"
+              echo "${EKS_ACCESS_USER_ARNS_JSON}"
+              echo "EOF"
+            } >> "${GITHUB_ENV}"
+          fi
+
       - name: Configure AWS credentials with OIDC
         uses: aws-actions/configure-aws-credentials@v4
         with:
