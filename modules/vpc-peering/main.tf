@@ -48,7 +48,9 @@ resource "aws_vpc_peering_connection_options" "this" {
 }
 
 resource "aws_route" "requester_to_accepter" {
-  for_each = toset(var.requester_route_table_ids)
+  for_each = {
+    for idx, route_table_id in var.requester_route_table_ids : idx => route_table_id
+  }
 
   route_table_id            = each.value
   destination_cidr_block    = var.accepter_vpc_cidr
@@ -56,7 +58,9 @@ resource "aws_route" "requester_to_accepter" {
 }
 
 resource "aws_route" "accepter_to_requester" {
-  for_each = toset(var.accepter_route_table_ids)
+  for_each = {
+    for idx, route_table_id in var.accepter_route_table_ids : idx => route_table_id
+  }
 
   route_table_id            = each.value
   destination_cidr_block    = var.requester_vpc_cidr
