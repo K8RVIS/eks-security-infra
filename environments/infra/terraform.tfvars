@@ -49,3 +49,7 @@ node_group = {
 ecr_repository_names     = ["web", "api", "db"]
 ecr_max_image_count      = 10
 ecr_untagged_expiry_days = 7
+
+user_iam_arn = {
+  team_c = "arn:aws:iam::357542025037:role/aws-reserved/sso.amazonaws.com/ap-northeast-2/AWSReservedSSO_AdministratorAccess_3a39e04d118e4347"
+}

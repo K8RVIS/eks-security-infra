@@ -121,3 +121,8 @@ variable "ecr_untagged_expiry_days" {
   type        = number
   default     = 7
 }
+variable "workload_s3_bucket_suffix" {
+  description = "Suffix for the S3 bucket used by IRSA and EKS Pod Identity labs."
+  type        = string
+  default     = "workload-access-lab"
+}
