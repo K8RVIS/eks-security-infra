@@ -24,7 +24,6 @@
 - VPC — 퍼블릭/프라이빗 서브넷 멀티 AZ 구성
 - Internet Gateway — 퍼블릭 서브넷 인터넷 연결
 - fck-nat — Spot EC2 기반 비용 최적화형 NAT (Managed NAT Gateway 대비 ~90% 비용 절감)
-- EKS Control Plane — private + public endpoint, 프라이빗 서브넷 배치
 - Node Group — Spot 인스턴스, gp3 암호화 볼륨, IMDSv2 강제 적용
 - IAM Role — EKS Cluster Role / Node Role (최소 권한 원칙)
 
