@@ -121,3 +121,15 @@ variable "ecr_untagged_expiry_days" {
   type        = number
   default     = 7
 }
+
+variable "cluster_enabled_log_types" {
+  description = "EKS control plane log types enabled for audit visibility."
+  type        = list(string)
+  default     = ["audit", "authenticator"]
+}
+
+variable "control_plane_log_retention_days" {
+  description = "CloudWatch retention days for EKS control plane logs."
+  type        = number
+  default     = 7
+}

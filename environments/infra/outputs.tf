@@ -107,3 +107,13 @@ output "ecr_kms_key_arn" {
   description = "ARN of the KMS key used for ECR repository encryption."
   value       = module.ecr.kms_key_arn
 }
+
+output "control_plane_log_group_name" {
+  description = "CloudWatch Log Group name for EKS control plane logs."
+  value       = module.eks.control_plane_log_group_name
+}
+
+output "cluster_enabled_log_types" {
+  description = "Enabled EKS control plane log types."
+  value       = module.eks.cluster_enabled_log_types
+}

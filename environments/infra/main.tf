@@ -26,6 +26,9 @@ module "eks" {
   node_ami_type                         = var.node_ami_type
   node_group                            = var.node_group
   default_tags                          = var.default_tags
+  cluster_enabled_log_types        = var.cluster_enabled_log_types
+  control_plane_log_retention_days = var.control_plane_log_retention_days
+
 
   authentication_mode = "API_AND_CONFIG_MAP"
   access_entries = {

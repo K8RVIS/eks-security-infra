@@ -47,3 +47,13 @@ output "node_subnet_ids" {
   description = "Subnet IDs used by the default managed node group."
   value       = var.node_subnet_ids
 }
+
+output "control_plane_log_group_name" {
+  description = "CloudWatch Log Group name for EKS control plane logs."
+  value       = aws_cloudwatch_log_group.eks_control_plane.name
+}
+
+output "cluster_enabled_log_types" {
+  description = "Enabled EKS control plane log types."
+  value       = aws_eks_cluster.this.enabled_cluster_log_types
+}

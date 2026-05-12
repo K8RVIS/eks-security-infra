@@ -106,3 +106,23 @@ variable "authentication_mode" {
   type        = string
   default     = "API_AND_CONFIG_MAP"
 }
+
+variable "cluster_enabled_log_types" {
+  description = "EKS control plane log types enabled for audit visibility."
+  type        = list(string)
+  default     = ["audit", "authenticator"]
+
+  validation {
+    condition = alltrue([
+      for log_type in var.cluster_enabled_log_types :
+      contains(["api", "audit", "authenticator", "controllerManager", "scheduler"], log_type)
+    ])
+    error_message = "Valid EKS control plane log types are api, audit, authenticator, controllerManager, scheduler."
+  }
+}
+
+variable "control_plane_log_retention_days" {
+  description = "CloudWatch retention days for the EKS control plane log group."
+  type        = number
+  default     = 7
+}
