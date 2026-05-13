@@ -11,6 +11,9 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INFRA_DIR = REPO_ROOT / "environments" / "infra"
 PLATFORM_DIR = REPO_ROOT / "environments" / "platform"
+EKS_CLUSTER_ADMIN_POLICY_ARN = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+SSO_RESERVED_ROLE_PATH = ":role/aws-reserved/sso.amazonaws.com/"
+GENERIC_SSO_ACCESS_ENTRY_KEY = "team_user"
 
 
 def default_state() -> dict[str, Any]:
@@ -26,6 +29,70 @@ def default_state() -> dict[str, Any]:
 
 def utc_now_iso() -> str:
     return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def normalize_eks_access_user_arns(values: dict[str, Any], role_to_assume: str = "") -> dict[str, str]:
+    candidates: list[tuple[str, str]] = []
+
+    for raw_name, raw_arn in values.items():
+        name = str(raw_name).strip()
+        arn = str(raw_arn).strip()
+        if not arn:
+            continue
+
+        if (name.startswith("team_") or name.startswith("team-")) and SSO_RESERVED_ROLE_PATH in arn:
+            name = GENERIC_SSO_ACCESS_ENTRY_KEY
+
+        candidates.append((name or GENERIC_SSO_ACCESS_ENTRY_KEY, arn))
+
+    role_to_assume = role_to_assume.strip()
+    if role_to_assume:
+        candidates.append(("github_actions", role_to_assume))
+
+    def priority(name: str) -> tuple[int, str]:
+        preferred = {GENERIC_SSO_ACCESS_ENTRY_KEY: 0, "github_actions": 1, "bot": 2}
+        return (preferred.get(name, 3), name)
+
+    preferred_name_by_arn: dict[str, str] = {}
+    for name, arn in candidates:
+        current_name = preferred_name_by_arn.get(arn)
+        if current_name is None or priority(name) < priority(current_name):
+            preferred_name_by_arn[arn] = name
+
+    normalized: dict[str, str] = {}
+    for arn, name in sorted(preferred_name_by_arn.items(), key=lambda item: priority(item[1])):
+        final_name = name
+        suffix = 2
+        while final_name in normalized:
+            final_name = f"{name}_{suffix}"
+            suffix += 1
+
+        normalized[final_name] = arn
+
+    return normalized
+
+
+def desired_eks_access_user_arns_from_env() -> dict[str, str]:
+    raw = os.environ.get("TF_VAR_user_iam_arn", "").strip()
+    if not raw:
+        return {}
+
+    try:
+        values = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+
+    if not isinstance(values, dict):
+        return {}
+
+    return normalize_eks_access_user_arns(values)
+
+
+def normalize_eks_access_user_arns_env() -> dict[str, str]:
+    normalized = desired_eks_access_user_arns_from_env()
+    if normalized:
+        os.environ["TF_VAR_user_iam_arn"] = json.dumps(normalized, separators=(",", ":"))
+    return normalized
 
 
 class S3StateStore:
@@ -77,6 +144,8 @@ class TerraformRunner:
         platform_state_key: str = "platform/terraform.tfstate",
         platform_infra_state_bucket: str | None = None,
         platform_infra_state_region: str | None = None,
+        eks_cluster_name: str | None = None,
+        eks_client: Any | None = None,
     ):
         self.aws_region = aws_region
         self.terraform_state_bucket = terraform_state_bucket
@@ -85,9 +154,15 @@ class TerraformRunner:
         self.platform_state_key = platform_state_key
         self.platform_infra_state_bucket = platform_infra_state_bucket or terraform_state_bucket
         self.platform_infra_state_region = platform_infra_state_region or terraform_state_region
+        self.eks_cluster_name = eks_cluster_name
+        self._eks_client = eks_client
 
     def _run(self, args: list[str], cwd: Path) -> None:
         subprocess.run(args, cwd=cwd, check=True)
+
+    def _run_capture(self, args: list[str], cwd: Path) -> str:
+        result = subprocess.run(args, cwd=cwd, check=True, capture_output=True, text=True)
+        return result.stdout
 
     def _init(self, cwd: Path, state_key: str) -> None:
         self._run(
@@ -103,8 +178,104 @@ class TerraformRunner:
         )
 
     def apply_infra(self) -> None:
+        desired_access_entries = normalize_eks_access_user_arns_env()
         self._init(INFRA_DIR, self.infra_state_key)
+        self._import_existing_eks_access_entries(desired_access_entries)
         self._run(["terraform", "apply", "-input=false", "-auto-approve"], cwd=INFRA_DIR)
+
+    @property
+    def eks_client(self):
+        if self._eks_client is None:
+            import boto3
+
+            self._eks_client = boto3.client("eks", region_name=self.aws_region)
+        return self._eks_client
+
+    def _terraform_state_addresses(self) -> set[str]:
+        try:
+            output = self._run_capture(["terraform", "state", "list"], cwd=INFRA_DIR)
+        except subprocess.CalledProcessError:
+            return set()
+
+        return {line.strip() for line in output.splitlines() if line.strip()}
+
+    def _is_resource_not_found(self, exc: Exception) -> bool:
+        error_response = getattr(exc, "response", {}) or {}
+        error_code = error_response.get("Error", {}).get("Code")
+        return error_code in {"ResourceNotFoundException", "NotFoundException"}
+
+    def _access_entry_exists(self, principal_arn: str) -> bool:
+        if not self.eks_cluster_name:
+            return False
+
+        try:
+            self.eks_client.describe_access_entry(
+                clusterName=self.eks_cluster_name,
+                principalArn=principal_arn,
+            )
+            return True
+        except Exception as exc:
+            if self._is_resource_not_found(exc) or exc.__class__.__name__ == "ResourceNotFoundException":
+                return False
+            raise
+
+    def _admin_policy_association_exists(self, principal_arn: str) -> bool:
+        if not self.eks_cluster_name:
+            return False
+
+        try:
+            response = self.eks_client.list_associated_access_policies(
+                clusterName=self.eks_cluster_name,
+                principalArn=principal_arn,
+            )
+        except Exception as exc:
+            if self._is_resource_not_found(exc) or exc.__class__.__name__ == "ResourceNotFoundException":
+                return False
+            raise
+
+        return any(
+            policy.get("policyArn") == EKS_CLUSTER_ADMIN_POLICY_ARN
+            for policy in response.get("associatedAccessPolicies", [])
+        )
+
+    def _import_existing_eks_access_entries(self, desired_access_entries: dict[str, str] | None = None) -> None:
+        if not self.eks_cluster_name:
+            return
+
+        desired_access_entries = desired_access_entries or desired_eks_access_user_arns_from_env()
+        if not desired_access_entries:
+            return
+
+        state_addresses = self._terraform_state_addresses()
+        for name, principal_arn in desired_access_entries.items():
+            access_entry_address = f'module.eks.aws_eks_access_entry.this["{name}"]'
+            if access_entry_address not in state_addresses and self._access_entry_exists(principal_arn):
+                self._run(
+                    [
+                        "terraform",
+                        "import",
+                        access_entry_address,
+                        f"{self.eks_cluster_name}:{principal_arn}",
+                    ],
+                    cwd=INFRA_DIR,
+                )
+                state_addresses.add(access_entry_address)
+
+            policy_association_address = f'module.eks.aws_eks_access_policy_association.this["{name}-admin"]'
+            if (
+                policy_association_address not in state_addresses
+                and self._admin_policy_association_exists(principal_arn)
+            ):
+                self._run(
+                    [
+                        "terraform",
+                        "import",
+                        policy_association_address,
+                        f"{self.eks_cluster_name}#{principal_arn}#{EKS_CLUSTER_ADMIN_POLICY_ARN}",
+                    ],
+                    cwd=INFRA_DIR,
+                )
+                state_addresses.add(policy_association_address)
 
     def apply_platform(self, namespaces: list[str]) -> None:
         self._init(PLATFORM_DIR, self.platform_state_key)
@@ -242,6 +413,7 @@ def build_runner_from_env() -> TerraformRunner:
         platform_state_key=os.environ.get("PLATFORM_TERRAFORM_STATE_KEY", "platform/terraform.tfstate"),
         platform_infra_state_bucket=os.environ.get("PLATFORM_INFRA_STATE_BUCKET"),
         platform_infra_state_region=os.environ.get("PLATFORM_INFRA_STATE_REGION"),
+        eks_cluster_name=os.environ.get("EKS_CLUSTER_NAME") or "eks-secure-infra-dev",
     )
 
 
