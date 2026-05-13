@@ -106,3 +106,17 @@ variable "authentication_mode" {
   type        = string
   default     = "API_AND_CONFIG_MAP"
 }
+
+variable "enabled_cluster_log_types" {
+  description = "EKS control plane log types to send to CloudWatch Logs."
+  type        = list(string)
+  default     = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+
+  validation {
+    condition = alltrue([
+      for t in var.enabled_cluster_log_types :
+      contains(["api", "audit", "authenticator", "controllerManager", "scheduler"], t)
+    ])
+    error_message = "Valid log types: api, audit, authenticator, controllerManager, scheduler."
+  }
+}

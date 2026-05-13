@@ -107,3 +107,23 @@ output "ecr_kms_key_arn" {
   description = "ARN of the KMS key used for ECR repository encryption."
   value       = module.ecr.kms_key_arn
 }
+
+output "eks_log_group_name" {
+  description = "CloudWatch Log Group name for EKS control plane logs."
+  value       = module.logging.eks_log_group_name
+}
+
+output "cloudtrail_arn" {
+  description = "ARN of the CloudTrail trail for EKS audit logging."
+  value       = module.logging.cloudtrail_arn
+}
+
+output "cloudtrail_s3_bucket_name" {
+  description = "S3 bucket name storing CloudTrail logs."
+  value       = module.logging.cloudtrail_s3_bucket_name
+}
+
+output "security_alerts_sns_topic_arn" {
+  description = "SNS topic ARN for security alert notifications."
+  value       = module.logging.security_alerts_sns_topic_arn
+}

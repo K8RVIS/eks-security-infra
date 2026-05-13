@@ -1,3 +1,7 @@
+locals {
+  cluster_name = "${var.project_name}-${var.environment}"
+}
+
 module "vpc" {
   source = "../../modules/vpc"
 
@@ -26,6 +30,7 @@ module "eks" {
   node_ami_type                         = var.node_ami_type
   node_group                            = var.node_group
   default_tags                          = var.default_tags
+  enabled_cluster_log_types             = var.enabled_cluster_log_types
 
   authentication_mode = "API_AND_CONFIG_MAP"
   access_entries = {
@@ -42,6 +47,21 @@ module "eks" {
     }
     if trimspace(arn) != ""
   }
+
+  depends_on = [module.logging]
+}
+
+module "logging" {
+  source = "../../modules/logging"
+
+  project_name                 = var.project_name
+  environment                  = var.environment
+  owner                        = var.owner
+  cluster_name                 = local.cluster_name
+  log_retention_days           = var.log_retention_days
+  cloudtrail_s3_retention_days = var.cloudtrail_s3_retention_days
+  alert_email                  = var.alert_email
+  default_tags                 = var.default_tags
 }
 module "ecr" {
   source = "../../modules/ecr"

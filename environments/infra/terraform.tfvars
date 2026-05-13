@@ -49,3 +49,9 @@ node_group = {
 ecr_repository_names     = ["web", "api", "db"]
 ecr_max_image_count      = 10
 ecr_untagged_expiry_days = 7
+
+# Logging & Audit
+enabled_cluster_log_types    = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+log_retention_days           = 90
+cloudtrail_s3_retention_days = 365
+alert_email                  = ""
