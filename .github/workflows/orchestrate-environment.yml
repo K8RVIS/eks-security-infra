@@ -97,6 +97,7 @@ jobs:
           import json
           import os
           import sys
+          from scripts.manage_environment import normalize_eks_access_user_arns
 
           raw = os.environ.get("EKS_ACCESS_USER_ARNS_JSON", "").strip()
           values = {}
@@ -112,15 +113,10 @@ jobs:
                   print("::error::EKS_ACCESS_USER_ARNS_JSON must be a JSON object mapping names to IAM role/user ARNs.", file=sys.stderr)
                   sys.exit(1)
 
-          role_to_assume = os.environ.get("AWS_ROLE_TO_ASSUME", "").strip()
-          if role_to_assume:
-              values.setdefault("github_actions", role_to_assume)
-
-          values = {
-              str(name): str(arn).strip()
-              for name, arn in values.items()
-              if str(arn).strip()
-          }
+          values = normalize_eks_access_user_arns(
+              values,
+              role_to_assume=os.environ.get("AWS_ROLE_TO_ASSUME", ""),
+          )
 
           print(f"EKS access entry principal keys: {', '.join(sorted(values)) or '(none)'}", file=sys.stderr)
           print(json.dumps(values, separators=(",", ":")))
