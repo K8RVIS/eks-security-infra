@@ -13,6 +13,10 @@ locals {
         namespace = team_name
       }
       syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
         syncOptions = ["CreateNamespace=true"]
       }
     }
