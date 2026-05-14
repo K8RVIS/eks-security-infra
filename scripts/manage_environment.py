@@ -4,6 +4,7 @@ import datetime as dt
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 from typing import Any
 
@@ -146,6 +147,8 @@ class TerraformRunner:
         platform_infra_state_region: str | None = None,
         eks_cluster_name: str | None = None,
         eks_client: Any | None = None,
+        elbv2_client: Any | None = None,
+        elb_client: Any | None = None,
     ):
         self.aws_region = aws_region
         self.terraform_state_bucket = terraform_state_bucket
@@ -156,6 +159,8 @@ class TerraformRunner:
         self.platform_infra_state_region = platform_infra_state_region or terraform_state_region
         self.eks_cluster_name = eks_cluster_name
         self._eks_client = eks_client
+        self._elbv2_client = elbv2_client
+        self._elb_client = elb_client
 
     def _run(self, args: list[str], cwd: Path) -> None:
         subprocess.run(args, cwd=cwd, check=True)
@@ -191,9 +196,25 @@ class TerraformRunner:
             self._eks_client = boto3.client("eks", region_name=self.aws_region)
         return self._eks_client
 
-    def _terraform_state_addresses(self) -> set[str]:
+    @property
+    def elbv2_client(self):
+        if self._elbv2_client is None:
+            import boto3
+
+            self._elbv2_client = boto3.client("elbv2", region_name=self.aws_region)
+        return self._elbv2_client
+
+    @property
+    def elb_client(self):
+        if self._elb_client is None:
+            import boto3
+
+            self._elb_client = boto3.client("elb", region_name=self.aws_region)
+        return self._elb_client
+
+    def _terraform_state_addresses(self, cwd: Path = INFRA_DIR) -> set[str]:
         try:
-            output = self._run_capture(["terraform", "state", "list"], cwd=INFRA_DIR)
+            output = self._run_capture(["terraform", "state", "list"], cwd=cwd)
         except subprocess.CalledProcessError:
             return set()
 
@@ -202,7 +223,7 @@ class TerraformRunner:
     def _is_resource_not_found(self, exc: Exception) -> bool:
         error_response = getattr(exc, "response", {}) or {}
         error_code = error_response.get("Error", {}).get("Code")
-        return error_code in {"ResourceNotFoundException", "NotFoundException"}
+        return error_code in {"ResourceNotFoundException", "NotFoundException", "LoadBalancerNotFound"}
 
     def _access_entry_exists(self, principal_arn: str) -> bool:
         if not self.eks_cluster_name:
@@ -304,11 +325,24 @@ class TerraformRunner:
     def destroy_platform(self, namespaces: list[str] | None = None) -> None:
         self._init(PLATFORM_DIR, self.platform_state_key)
         platform_var_args = self._platform_var_args(namespaces)
-        if namespaces:
+        state_addresses = self._terraform_state_addresses(PLATFORM_DIR)
+        argocd_apps_address = "module.argocd.helm_release.argocd_apps"
+        if namespaces and argocd_apps_address in state_addresses:
             self._run(
                 [
                     "terraform",
                     "apply",
+                    "-input=false",
+                    "-auto-approve",
+                    "-target=module.argocd.helm_release.argocd_apps",
+                    *platform_var_args,
+                ],
+                cwd=PLATFORM_DIR,
+            )
+            self._run(
+                [
+                    "terraform",
+                    "destroy",
                     "-input=false",
                     "-auto-approve",
                     "-target=module.argocd.helm_release.argocd_apps",
@@ -322,24 +356,87 @@ class TerraformRunner:
                 "destroy",
                 "-input=false",
                 "-auto-approve",
-                "-target=module.argocd.helm_release.argocd_apps",
-                *platform_var_args,
-            ],
-            cwd=PLATFORM_DIR,
-        )
-        self._run(
-            [
-                "terraform",
-                "destroy",
-                "-input=false",
-                "-auto-approve",
                 *platform_var_args,
             ],
             cwd=PLATFORM_DIR,
         )
 
+    def _infra_outputs(self) -> dict[str, Any]:
+        try:
+            raw_outputs = self._run_capture(["terraform", "output", "-json"], cwd=INFRA_DIR)
+        except subprocess.CalledProcessError:
+            return {}
+
+        if not raw_outputs.strip():
+            return {}
+
+        outputs = json.loads(raw_outputs)
+        return {name: output.get("value") for name, output in outputs.items()}
+
+    def _list_vpc_elbv2_load_balancers(self, vpc_id: str) -> list[dict[str, Any]]:
+        response = self.elbv2_client.describe_load_balancers()
+        return [
+            load_balancer
+            for load_balancer in response.get("LoadBalancers", [])
+            if load_balancer.get("VpcId") == vpc_id
+        ]
+
+    def _list_vpc_classic_load_balancers(self, vpc_id: str) -> list[dict[str, Any]]:
+        response = self.elb_client.describe_load_balancers()
+        return [
+            load_balancer
+            for load_balancer in response.get("LoadBalancerDescriptions", [])
+            if load_balancer.get("VPCId") == vpc_id
+        ]
+
+    def _delete_vpc_load_balancers(self, vpc_id: str) -> None:
+        for load_balancer in self._list_vpc_elbv2_load_balancers(vpc_id):
+            arn = load_balancer["LoadBalancerArn"]
+            name = load_balancer.get("LoadBalancerName", arn)
+            print(f"Deleting ELBv2 load balancer before infra destroy: {name}")
+            try:
+                self.elbv2_client.delete_load_balancer(LoadBalancerArn=arn)
+            except Exception as exc:
+                if not self._is_resource_not_found(exc):
+                    raise
+
+        for load_balancer in self._list_vpc_classic_load_balancers(vpc_id):
+            name = load_balancer["LoadBalancerName"]
+            print(f"Deleting classic ELB before infra destroy: {name}")
+            try:
+                self.elb_client.delete_load_balancer(LoadBalancerName=name)
+            except Exception as exc:
+                if not self._is_resource_not_found(exc):
+                    raise
+
+        self._wait_for_vpc_load_balancers_deleted(vpc_id)
+
+    def _wait_for_vpc_load_balancers_deleted(self, vpc_id: str, timeout_seconds: int = 600) -> None:
+        deadline = time.monotonic() + timeout_seconds
+        while True:
+            remaining = [
+                *(load_balancer.get("LoadBalancerName") or load_balancer.get("LoadBalancerArn", "<unknown>")
+                  for load_balancer in self._list_vpc_elbv2_load_balancers(vpc_id)),
+                *(load_balancer.get("LoadBalancerName", "<unknown>")
+                  for load_balancer in self._list_vpc_classic_load_balancers(vpc_id)),
+            ]
+            if not remaining:
+                return
+
+            if time.monotonic() >= deadline:
+                raise RuntimeError(
+                    "Timed out waiting for VPC load balancers to delete before infra destroy: "
+                    + ", ".join(sorted(remaining))
+                )
+
+            print("Waiting for VPC load balancers to delete before infra destroy: " + ", ".join(sorted(remaining)))
+            time.sleep(15)
+
     def destroy_infra(self) -> None:
         self._init(INFRA_DIR, self.infra_state_key)
+        vpc_id = self._infra_outputs().get("vpc_id")
+        if vpc_id:
+            self._delete_vpc_load_balancers(vpc_id)
         self._run(["terraform", "destroy", "-input=false", "-auto-approve"], cwd=INFRA_DIR)
 
 
