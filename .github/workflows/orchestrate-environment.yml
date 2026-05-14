@@ -141,6 +141,7 @@ jobs:
           set -euo pipefail
 
           cluster_name="${EKS_CLUSTER_NAME:-eks-secure-infra-dev}"
+          operation="${{ github.event.inputs.operation }}"
           echo "Cluster: ${cluster_name}"
           echo "Runner host: $(hostname)"
           echo "Runner local IPv4: $(curl -fsS --connect-timeout 2 http://169.254.169.254/latest/meta-data/local-ipv4 || echo unavailable)"
@@ -149,13 +150,32 @@ jobs:
           cat /etc/resolv.conf
           echo "::endgroup::"
 
-          endpoint_host="$(
+          describe_error_file="$(mktemp)"
+          trap 'rm -f "${describe_error_file}"' EXIT
+          if ! endpoint_url="$(
             aws eks describe-cluster \
               --name "${cluster_name}" \
               --region "${AWS_REGION}" \
               --query 'cluster.endpoint' \
-              --output text | sed 's#https://##'
-          )"
+              --output text 2>"${describe_error_file}"
+          )"; then
+            if grep -q "ResourceNotFoundException" "${describe_error_file}"; then
+              if [ "${operation}" = "start" ]; then
+                echo "::notice::EKS cluster does not exist yet; skipping private API connectivity check for first start."
+                exit 0
+              fi
+
+              echo "::error::EKS cluster ${cluster_name} does not exist."
+            else
+              echo "::error::Failed to describe EKS cluster ${cluster_name}."
+            fi
+
+            cat "${describe_error_file}" >&2
+            exit 1
+          fi
+          rm -f "${describe_error_file}"
+
+          endpoint_host="$(printf '%s' "${endpoint_url}" | sed 's#https://##')"
 
           if [ -z "${endpoint_host}" ] || [ "${endpoint_host}" = "None" ]; then
             echo "::error::Unable to resolve EKS cluster endpoint for ${cluster_name}."
