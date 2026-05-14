@@ -292,16 +292,48 @@ class TerraformRunner:
             cwd=PLATFORM_DIR,
         )
 
-    def destroy_platform(self) -> None:
+    def _platform_var_args(self, namespaces: list[str] | None = None) -> list[str]:
+        args = [
+            f"-var=infra_state_bucket_name={self.platform_infra_state_bucket}",
+            f"-var=infra_state_region={self.platform_infra_state_region}",
+        ]
+        if namespaces is not None:
+            args.append(f"-var=team_names={json.dumps(namespaces)}")
+        return args
+
+    def destroy_platform(self, namespaces: list[str] | None = None) -> None:
         self._init(PLATFORM_DIR, self.platform_state_key)
+        platform_var_args = self._platform_var_args(namespaces)
+        if namespaces:
+            self._run(
+                [
+                    "terraform",
+                    "apply",
+                    "-input=false",
+                    "-auto-approve",
+                    "-target=module.argocd.helm_release.argocd_apps",
+                    *platform_var_args,
+                ],
+                cwd=PLATFORM_DIR,
+            )
         self._run(
             [
                 "terraform",
                 "destroy",
                 "-input=false",
                 "-auto-approve",
-                f"-var=infra_state_bucket_name={self.platform_infra_state_bucket}",
-                f"-var=infra_state_region={self.platform_infra_state_region}",
+                "-target=module.argocd.helm_release.argocd_apps",
+                *platform_var_args,
+            ],
+            cwd=PLATFORM_DIR,
+        )
+        self._run(
+            [
+                "terraform",
+                "destroy",
+                "-input=false",
+                "-auto-approve",
+                *platform_var_args,
             ],
             cwd=PLATFORM_DIR,
         )
@@ -392,7 +424,7 @@ class EnvironmentOrchestrator:
             return next_state
 
         if not next_state["active_users"]:
-            self.terraform_runner.destroy_platform()
+            self.terraform_runner.destroy_platform(current_state["active_namespaces"])
             self.terraform_runner.destroy_infra()
             next_state["infra_status"] = "stopped"
             return next_state
