@@ -21,6 +21,11 @@ terraform {
       source  = "hashicorp/http"
       version = "~> 3.0"
     }
+
+    cloudflare = {
+      source  = "cloudflare/cloudflare"
+      version = "~> 4.43"
+    }
   }
 }
 
@@ -41,3 +46,5 @@ provider "helm" {
     token                  = data.aws_eks_cluster_auth.infra.token
   }
 }
+
+provider "cloudflare" {}

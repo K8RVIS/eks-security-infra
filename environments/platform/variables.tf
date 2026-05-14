@@ -29,6 +29,26 @@ variable "infra_state_region" {
   type        = string
 }
 
+variable "cloudflare_zone_id" {
+  description = "Cloudflare zone ID that hosts public ACM DNS validation records. Leave null to skip Cloudflare DNS management."
+  type        = string
+  default     = null
+}
+
+variable "acm_dns_validation_records" {
+  description = "ACM DNS validation CNAME records that must remain published for managed renewal."
+  type = map(object({
+    name    = string
+    content = string
+  }))
+  default = {}
+
+  validation {
+    condition     = var.cloudflare_zone_id != null || length(var.acm_dns_validation_records) == 0
+    error_message = "cloudflare_zone_id must be set when acm_dns_validation_records is not empty."
+  }
+}
+
 variable "helm_release_timeout_seconds" {
   description = "Timeout in seconds applied to each addon helm release."
   type        = number
