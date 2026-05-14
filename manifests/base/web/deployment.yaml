@@ -29,8 +29,9 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:       
               drop: ["ALL"]
-            seccompProfile:     
-              type: RuntimeDefault
+            seccompProfile:
+              type: Localhost
+              localhostProfile: web-nginx.json
           volumeMounts:
             - name: cache
               mountPath: /var/cache/nginx
