@@ -13,6 +13,11 @@ variable "owner" {
   type        = string
 }
 
+variable "vpc_id" {
+  description = "VPC ID where the EKS managed node security group is created."
+  type        = string
+}
+
 variable "cluster_subnet_ids" {
   description = "Subnet IDs used by the EKS control plane."
   type        = list(string)

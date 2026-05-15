@@ -23,6 +23,11 @@ output "cluster_security_group_id" {
   value       = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
 }
 
+output "node_security_group_id" {
+  description = "Security group attached to the default managed node group."
+  value       = aws_security_group.node.id
+}
+
 output "cluster_subnet_ids" {
   description = "Subnet IDs used by the EKS control plane."
   value       = var.cluster_subnet_ids

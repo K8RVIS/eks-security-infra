@@ -139,9 +139,76 @@ resource "aws_security_group_rule" "cluster_private_endpoint_ingress" {
   description       = "Allow private EKS API endpoint access from ${each.value}"
 }
 
+resource "aws_security_group" "node" {
+  name_prefix            = "${local.node_group_name}-"
+  description            = "Restrict EKS managed node ingress, including kubelet API access"
+  vpc_id                 = var.vpc_id
+  revoke_rules_on_delete = true
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name    = "${local.node_group_name}-sg"
+      Role    = "eks-node"
+      Purpose = "kubelet-api-restricted"
+    }
+  )
+}
+
+resource "aws_security_group_rule" "cluster_private_endpoint_from_nodes" {
+  type                     = "ingress"
+  security_group_id        = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+  protocol                 = "tcp"
+  from_port                = 443
+  to_port                  = 443
+  source_security_group_id = aws_security_group.node.id
+  description              = "Allow managed nodes to reach the private EKS API endpoint"
+}
+
+resource "aws_security_group_rule" "cluster_kubelet_https_to_nodes" {
+  type                     = "egress"
+  security_group_id        = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+  protocol                 = "tcp"
+  from_port                = 10250
+  to_port                  = 10250
+  source_security_group_id = aws_security_group.node.id
+  description              = "Allow EKS control plane egress to managed node kubelet HTTPS API"
+}
+
+resource "aws_security_group_rule" "node_kubelet_https_from_cluster" {
+  type                     = "ingress"
+  security_group_id        = aws_security_group.node.id
+  protocol                 = "tcp"
+  from_port                = 10250
+  to_port                  = 10250
+  source_security_group_id = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
+  description              = "Allow kubelet HTTPS API only from the EKS control plane security group"
+}
+
+resource "aws_security_group_rule" "node_inter_node" {
+  type              = "ingress"
+  security_group_id = aws_security_group.node.id
+  protocol          = "-1"
+  from_port         = 0
+  to_port           = 0
+  self              = true
+  description       = "Allow managed nodes to communicate with each other"
+}
+
+resource "aws_security_group_rule" "node_egress" {
+  type              = "egress"
+  security_group_id = aws_security_group.node.id
+  protocol          = "-1"
+  from_port         = 0
+  to_port           = 0
+  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "Allow managed nodes to reach required AWS APIs and registries"
+}
+
 resource "aws_launch_template" "node_group" {
   name_prefix            = "${local.node_group_name}-"
   update_default_version = true
+  vpc_security_group_ids = [aws_security_group.node.id]
 
   block_device_mappings {
     device_name = "/dev/xvda"
@@ -215,6 +282,11 @@ resource "aws_eks_node_group" "this" {
 
   depends_on = [
     # aws_eks_addon.vpc_cni,
+    aws_security_group_rule.cluster_kubelet_https_to_nodes,
+    aws_security_group_rule.cluster_private_endpoint_from_nodes,
+    aws_security_group_rule.node_egress,
+    aws_security_group_rule.node_inter_node,
+    aws_security_group_rule.node_kubelet_https_from_cluster,
     aws_iam_role_policy_attachment.node_worker_policy,
     aws_iam_role_policy_attachment.node_cni_policy,
     aws_iam_role_policy_attachment.node_ecr_policy,
