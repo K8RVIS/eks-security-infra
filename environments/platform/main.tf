@@ -137,6 +137,9 @@ module "k8s_base" {
   external_secrets_chart_version                    = var.external_secrets_chart_version
   external_secrets_service_account_name             = var.external_secrets_service_account_name
 
+  falco_namespace     = var.falco_namespace
+  falco_chart_version = var.falco_chart_version
+
   depends_on = [
     aws_eks_pod_identity_association.aws_load_balancer_controller,
     aws_eks_pod_identity_association.external_secrets,
