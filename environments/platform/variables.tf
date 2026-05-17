@@ -172,3 +172,15 @@ variable "team_names" {
   type        = list(string)
   default     = ["team-a", "team-b", "team-c", "team-d"]
 }
+
+variable "falco_namespace" {
+  description = "Namespace used for the Falco release."
+  type        = string
+  default     = "falco"
+}
+
+variable "falco_chart_version" {
+  description = "Pinned chart version for Falco. Set to null to use the repository default."
+  type        = string
+  default     = null
+}

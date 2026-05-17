@@ -96,3 +96,15 @@ variable "external_secrets_service_account_name" {
   type        = string
   default     = "external-secrets"
 }
+
+variable "falco_namespace" {
+  description = "Namespace used for the Falco release."
+  type        = string
+  default     = "falco"
+}
+
+variable "falco_chart_version" {
+  description = "Pinned chart version for Falco. Set to null to use the repository default."
+  type        = string
+  default     = null
+}
