@@ -147,3 +147,50 @@ resource "helm_release" "external_secrets" {
 
   depends_on = [helm_release.aws_load_balancer_controller]
 }
+
+resource "helm_release" "falco" {
+  name             = "falco"
+  namespace        = var.falco_namespace
+  create_namespace = true
+  repository       = "https://falcosecurity.github.io/charts"
+  chart            = "falco"
+  version          = var.falco_chart_version
+  timeout          = var.helm_release_timeout_seconds
+  atomic           = true
+  cleanup_on_fail  = true
+  wait             = true
+
+  values = [
+    <<-EOT
+    driver:
+      kind: modern_ebpf
+    falco:
+      json_output: true
+      json_include_output_property: true
+      log_stderr: true
+      priority: notice
+      stdout_output:
+        enabled: true
+    customRules:
+      k8rvis_rules.yaml: |
+        - rule: Shell spawned in container
+          desc: A shell was spawned inside a container
+          condition: spawned_process and container and proc.name in (bash, sh, dash, zsh, ash, fish)
+          output: "Shell spawned in container (user=%user.name container=%container.name image=%container.image.repository:%container.image.tag shell=%proc.name cmdline=%proc.cmdline)"
+          priority: WARNING
+          tags: [container, shell, k8rvis]
+        - rule: Write below etc in container
+          desc: A process wrote to the /etc directory inside a container
+          condition: open_write and container and fd.name startswith /etc
+          output: "Write below /etc in container (user=%user.name container=%container.name image=%container.image.repository:%container.image.tag file=%fd.name)"
+          priority: WARNING
+          tags: [container, filesystem, k8rvis]
+        - rule: Sensitive file read in container
+          desc: A process read a sensitive credential file inside a container
+          condition: open_read and container and fd.name in (/etc/shadow, /etc/passwd, /etc/sudoers)
+          output: "Sensitive file read in container (user=%user.name container=%container.name image=%container.image.repository:%container.image.tag file=%fd.name)"
+          priority: CRITICAL
+          tags: [container, filesystem, credential_access, k8rvis]
+    EOT
+  ]
+}

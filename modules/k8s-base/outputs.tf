@@ -47,3 +47,13 @@ output "encrypted_storage_class_name" {
   description = "Encrypted gp3 StorageClass name for EBS-backed workload PVCs."
   value       = kubernetes_storage_class_v1.encrypted_gp3.metadata[0].name
 }
+
+output "falco_release_name" {
+  description = "Helm release name for Falco."
+  value       = helm_release.falco.name
+}
+
+output "falco_namespace" {
+  description = "Namespace where Falco is deployed."
+  value       = helm_release.falco.namespace
+}
