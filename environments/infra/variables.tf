@@ -121,3 +121,27 @@ variable "ecr_untagged_expiry_days" {
   type        = number
   default     = 7
 }
+
+variable "enabled_cluster_log_types" {
+  description = "EKS control plane log types to enable."
+  type        = list(string)
+  default     = ["api", "audit", "authenticator", "controllerManager", "scheduler"]
+}
+
+variable "log_retention_days" {
+  description = "CloudWatch Log Group retention period in days."
+  type        = number
+  default     = 90
+}
+
+variable "cloudtrail_s3_retention_days" {
+  description = "Days to retain CloudTrail log files in S3."
+  type        = number
+  default     = 365
+}
+
+variable "alert_email" {
+  description = "Email address for SNS security alert notifications. Leave empty to skip."
+  type        = string
+  default     = ""
+}

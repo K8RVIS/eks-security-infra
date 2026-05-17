@@ -105,6 +105,8 @@ resource "aws_eks_cluster" "this" {
   role_arn = aws_iam_role.cluster.arn
   version  = var.kubernetes_version
 
+  enabled_cluster_log_types = var.enabled_cluster_log_types
+
   access_config {
     authentication_mode = var.authentication_mode
   }
