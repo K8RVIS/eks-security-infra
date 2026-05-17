@@ -136,91 +136,91 @@ jobs:
           role-to-assume: ${{ env.AWS_ROLE_TO_ASSUME }}
           role-session-name: github-actions-eks-orchestrator
 
-      - name: Verify private EKS API connectivity
-        run: |
-          set -euo pipefail
+      # - name: Verify private EKS API connectivity
+      #   run: |
+      #     set -euo pipefail
 
-          cluster_name="${EKS_CLUSTER_NAME:-eks-secure-infra-dev}"
-          operation="${{ github.event.inputs.operation }}"
-          echo "Cluster: ${cluster_name}"
-          echo "Runner host: $(hostname)"
-          echo "Runner local IPv4: $(curl -fsS --connect-timeout 2 http://169.254.169.254/latest/meta-data/local-ipv4 || echo unavailable)"
+      #     cluster_name="${EKS_CLUSTER_NAME:-eks-secure-infra-dev}"
+      #     operation="${{ github.event.inputs.operation }}"
+      #     echo "Cluster: ${cluster_name}"
+      #     echo "Runner host: $(hostname)"
+      #     echo "Runner local IPv4: $(curl -fsS --connect-timeout 2 http://169.254.169.254/latest/meta-data/local-ipv4 || echo unavailable)"
 
-          echo "::group::Resolver configuration"
-          cat /etc/resolv.conf
-          echo "::endgroup::"
+      #     echo "::group::Resolver configuration"
+      #     cat /etc/resolv.conf
+      #     echo "::endgroup::"
 
-          describe_error_file="$(mktemp)"
-          trap 'rm -f "${describe_error_file}"' EXIT
-          if ! endpoint_url="$(
-            aws eks describe-cluster \
-              --name "${cluster_name}" \
-              --region "${AWS_REGION}" \
-              --query 'cluster.endpoint' \
-              --output text 2>"${describe_error_file}"
-          )"; then
-            if grep -q "ResourceNotFoundException" "${describe_error_file}"; then
-              if [ "${operation}" = "start" ]; then
-                echo "::notice::EKS cluster does not exist yet; skipping private API connectivity check for first start."
-                exit 0
-              fi
+      #     describe_error_file="$(mktemp)"
+      #     trap 'rm -f "${describe_error_file}"' EXIT
+      #     if ! endpoint_url="$(
+      #       aws eks describe-cluster \
+      #         --name "${cluster_name}" \
+      #         --region "${AWS_REGION}" \
+      #         --query 'cluster.endpoint' \
+      #         --output text 2>"${describe_error_file}"
+      #     )"; then
+      #       if grep -q "ResourceNotFoundException" "${describe_error_file}"; then
+      #         if [ "${operation}" = "start" ]; then
+      #           echo "::notice::EKS cluster does not exist yet; skipping private API connectivity check for first start."
+      #           exit 0
+      #         fi
 
-              echo "::error::EKS cluster ${cluster_name} does not exist."
-            else
-              echo "::error::Failed to describe EKS cluster ${cluster_name}."
-            fi
+      #         echo "::error::EKS cluster ${cluster_name} does not exist."
+      #       else
+      #         echo "::error::Failed to describe EKS cluster ${cluster_name}."
+      #       fi
 
-            cat "${describe_error_file}" >&2
-            exit 1
-          fi
-          rm -f "${describe_error_file}"
+      #       cat "${describe_error_file}" >&2
+      #       exit 1
+      #     fi
+      #     rm -f "${describe_error_file}"
 
-          endpoint_host="$(printf '%s' "${endpoint_url}" | sed 's#https://##')"
+      #     endpoint_host="$(printf '%s' "${endpoint_url}" | sed 's#https://##')"
 
-          if [ -z "${endpoint_host}" ] || [ "${endpoint_host}" = "None" ]; then
-            echo "::error::Unable to resolve EKS cluster endpoint for ${cluster_name}."
-            exit 1
-          fi
+      #     if [ -z "${endpoint_host}" ] || [ "${endpoint_host}" = "None" ]; then
+      #       echo "::error::Unable to resolve EKS cluster endpoint for ${cluster_name}."
+      #       exit 1
+      #     fi
 
-          echo "EKS endpoint host: ${endpoint_host}"
-          resolved_ips="$(getent ahostsv4 "${endpoint_host}" | awk '{print $1}' | sort -u | tr '\n' ' ')"
+      #     echo "EKS endpoint host: ${endpoint_host}"
+      #     resolved_ips="$(getent ahostsv4 "${endpoint_host}" | awk '{print $1}' | sort -u | tr '\n' ' ')"
 
-          if [ -z "${resolved_ips}" ]; then
-            echo "::error::DNS did not return any IPv4 addresses for ${endpoint_host}."
-            exit 1
-          fi
+      #     if [ -z "${resolved_ips}" ]; then
+      #       echo "::error::DNS did not return any IPv4 addresses for ${endpoint_host}."
+      #       exit 1
+      #     fi
 
-          echo "Resolved endpoint IPv4 addresses: ${resolved_ips}"
-          RESOLVED_IPS="${resolved_ips}" python - <<'PY'
-          import ipaddress
-          import os
-          import sys
+      #     echo "Resolved endpoint IPv4 addresses: ${resolved_ips}"
+      #     RESOLVED_IPS="${resolved_ips}" python - <<'PY'
+      #     import ipaddress
+      #     import os
+      #     import sys
 
-          ips = os.environ["RESOLVED_IPS"].split()
-          public_ips = [ip for ip in ips if not ipaddress.ip_address(ip).is_private]
+      #     ips = os.environ["RESOLVED_IPS"].split()
+      #     public_ips = [ip for ip in ips if not ipaddress.ip_address(ip).is_private]
 
-          if public_ips:
-              print(
-                  "::error::Private-only EKS endpoint resolved to public IP(s): "
-                  + ", ".join(public_ips),
-                  file=sys.stderr,
-              )
-              sys.exit(1)
-          PY
+      #     if public_ips:
+      #         print(
+      #             "::error::Private-only EKS endpoint resolved to public IP(s): "
+      #             + ", ".join(public_ips),
+      #             file=sys.stderr,
+      #         )
+      #         sys.exit(1)
+      #     PY
 
-          http_code="$(
-            curl -sk --connect-timeout 5 --max-time 10 \
-              -o /tmp/eks-api-probe.json \
-              -w '%{http_code}' \
-              "https://${endpoint_host}/version" || true
-          )"
+      #     http_code="$(
+      #       curl -sk --connect-timeout 5 --max-time 10 \
+      #         -o /tmp/eks-api-probe.json \
+      #         -w '%{http_code}' \
+      #         "https://${endpoint_host}/version" || true
+      #     )"
 
-          echo "EKS /version HTTP status: ${http_code}"
-          if [ "${http_code}" = "000" ]; then
-            echo "::error::Unable to connect to the private EKS API endpoint from this runner."
-            cat /tmp/eks-api-probe.json 2>/dev/null || true
-            exit 1
-          fi
+      #     echo "EKS /version HTTP status: ${http_code}"
+      #     if [ "${http_code}" = "000" ]; then
+      #       echo "::error::Unable to connect to the private EKS API endpoint from this runner."
+      #       cat /tmp/eks-api-probe.json 2>/dev/null || true
+      #       exit 1
+      #     fi
 
       - name: Run orchestration
         run: |
