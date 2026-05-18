@@ -47,3 +47,13 @@ output "encrypted_storage_class_name" {
   description = "Encrypted gp3 StorageClass name for EBS-backed workload PVCs."
   value       = kubernetes_storage_class_v1.encrypted_gp3.metadata[0].name
 }
+
+output "prometheus_release_name" {
+  description = "Helm release name for kube-prometheus-stack."
+  value       = helm_release.kube_prometheus_stack.name
+}
+
+output "prometheus_namespace" {
+  description = "Namespace where kube-prometheus-stack is deployed."
+  value       = helm_release.kube_prometheus_stack.namespace
+}
