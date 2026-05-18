@@ -12,13 +12,11 @@ variables {
   project_name       = "eks-secure-infra"
   environment        = "dev"
   owner              = "K8RVIS"
+  vpc_id             = "vpc-0123456789abcdef0"
   cluster_subnet_ids = ["subnet-private-a", "subnet-private-b"]
   node_subnet_ids    = ["subnet-public-a", "subnet-public-b"]
   kubernetes_version = "1.34"
   node_ami_type      = "AL2023_ARM_64_STANDARD"
-  cluster_public_access_cidrs = [
-    "115.136.89.40/32",
-  ]
 
   node_group = {
     instance_types = ["t4g.medium", "t4g.large", "m7g.large", "c7g.large"]
@@ -53,18 +51,8 @@ run "plan_builds_minimal_eks_cluster" {
   }
 
   assert {
-    condition     = aws_eks_cluster.this.vpc_config[0].endpoint_private_access && aws_eks_cluster.this.vpc_config[0].endpoint_public_access
-    error_message = "The EKS cluster must keep both private and public API endpoint access enabled for the transition phase."
-  }
-
-  assert {
-    condition     = length(setsubtract(toset(var.cluster_public_access_cidrs), toset(aws_eks_cluster.this.vpc_config[0].public_access_cidrs))) == 0
-    error_message = "The EKS public API endpoint must be restricted to the configured public access CIDRs."
-  }
-
-  assert {
-    condition     = !contains(aws_eks_cluster.this.vpc_config[0].public_access_cidrs, "0.0.0.0/0")
-    error_message = "The EKS public API endpoint must not allow 0.0.0.0/0."
+    condition     = aws_eks_cluster.this.vpc_config[0].endpoint_private_access && !aws_eks_cluster.this.vpc_config[0].endpoint_public_access
+    error_message = "The EKS cluster API endpoint must be private-only."
   }
 
   assert {
@@ -118,6 +106,21 @@ run "plan_builds_minimal_eks_cluster" {
   }
 
   assert {
+    condition     = aws_security_group.node.vpc_id == var.vpc_id
+    error_message = "Managed nodes must use a dedicated security group in the infra VPC."
+  }
+
+  assert {
+    condition     = aws_security_group_rule.node_kubelet_https_from_cluster.type == "ingress" && aws_security_group_rule.node_kubelet_https_from_cluster.from_port == 10250 && aws_security_group_rule.node_kubelet_https_from_cluster.to_port == 10250
+    error_message = "Kubelet HTTPS API must only open the expected ingress port."
+  }
+
+  assert {
+    condition     = aws_security_group_rule.cluster_private_endpoint_from_nodes.type == "ingress" && aws_security_group_rule.cluster_private_endpoint_from_nodes.from_port == 443 && aws_security_group_rule.cluster_private_endpoint_from_nodes.to_port == 443
+    error_message = "Managed nodes must be allowed to reach the private EKS API endpoint over HTTPS."
+  }
+
+  assert {
     condition     = output.cluster_name == aws_eks_cluster.this.name
     error_message = "The module must expose the EKS cluster name as an output."
   }
@@ -126,4 +129,5 @@ run "plan_builds_minimal_eks_cluster" {
     condition     = output.node_group_name == aws_eks_node_group.this.node_group_name
     error_message = "The module must expose the managed node group name as an output."
   }
+
 }

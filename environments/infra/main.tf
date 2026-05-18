@@ -19,6 +19,7 @@ module "eks" {
   project_name                          = var.project_name
   environment                           = var.environment
   owner                                 = var.owner
+  vpc_id                                = module.vpc.vpc_id
   cluster_subnet_ids                    = module.vpc.private_subnet_ids
   node_subnet_ids                       = module.vpc.private_subnet_ids
   cluster_private_endpoint_access_cidrs = var.cluster_private_endpoint_access_cidrs

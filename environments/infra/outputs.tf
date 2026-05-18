@@ -68,6 +68,11 @@ output "cluster_security_group_id" {
   value       = module.eks.cluster_security_group_id
 }
 
+output "node_security_group_id" {
+  description = "Security group ID attached to the default infra EKS managed node group."
+  value       = module.eks.node_security_group_id
+}
+
 output "cluster_subnet_ids" {
   description = "Subnet IDs used by the infra EKS control plane."
   value       = module.eks.cluster_subnet_ids
