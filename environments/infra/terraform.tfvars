@@ -21,7 +21,7 @@ private_subnet_cidrs = [
 ]
 
 cluster_private_endpoint_access_cidrs = [
-  "172.31.0.0/16","10.0.0.0/16"
+  "172.31.0.0/16", "10.0.0.0/16"
 ]
 
 vpn_vpc_id   = "vpc-096c2102f9e82e7e2"
@@ -49,3 +49,17 @@ node_group = {
 ecr_repository_names     = ["web", "api", "db"]
 ecr_max_image_count      = 10
 ecr_untagged_expiry_days = 7
+
+break_glass_enabled = true
+
+break_glass_trusted_principal_arns = [
+  "arn:aws:iam::357542025037:role/aws-reserved/sso.amazonaws.com/ap-northeast-2/AWSReservedSSO_AdministratorAccess_3a39e04d118e4347"
+]
+
+break_glass_alert_email_addresses = [
+  "epohda002@naver.com"
+]
+
+user_iam_arn = {
+  my_admin = "arn:aws:iam::357542025037:role/aws-reserved/sso.amazonaws.com/ap-northeast-2/AWSReservedSSO_AdministratorAccess_3a39e04d118e4347"
+}
