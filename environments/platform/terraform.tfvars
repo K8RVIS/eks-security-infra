@@ -13,3 +13,7 @@ aws_load_balancer_controller_chart_version = "3.2.2"
 argocd_chart_version                       = "9.4.17"
 argocd_apps_chart_version                  = "2.0.3"
 gitops_repo_url                            = "https://github.com/K8RVIS/eks-secure-infra.git"
+
+prometheus_chart_version = "70.4.2"
+# grafana_admin_password은 tfvars에 직접 넣지 않는다.
+# 배포 시 환경변수로 주입한다: export TF_VAR_grafana_admin_password=<password>

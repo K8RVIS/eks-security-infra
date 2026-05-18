@@ -172,3 +172,21 @@ variable "team_names" {
   type        = list(string)
   default     = ["team-a", "team-b", "team-c", "team-d"]
 }
+
+variable "prometheus_namespace" {
+  description = "Namespace used for the kube-prometheus-stack release."
+  type        = string
+  default     = "monitoring"
+}
+
+variable "prometheus_chart_version" {
+  description = "Pinned chart version for kube-prometheus-stack."
+  type        = string
+  default     = "70.4.2"
+}
+
+variable "grafana_admin_password" {
+  description = "Grafana admin password. Set via tfvars or TF_VAR_grafana_admin_password."
+  type        = string
+  sensitive   = true
+}
