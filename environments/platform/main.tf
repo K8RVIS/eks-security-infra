@@ -136,6 +136,9 @@ module "k8s_base" {
   external_secrets_namespace                        = var.external_secrets_namespace
   external_secrets_chart_version                    = var.external_secrets_chart_version
   external_secrets_service_account_name             = var.external_secrets_service_account_name
+  prometheus_namespace                              = var.prometheus_namespace
+  prometheus_chart_version                          = var.prometheus_chart_version
+  grafana_admin_password                            = var.grafana_admin_password
 
   depends_on = [
     aws_eks_pod_identity_association.aws_load_balancer_controller,
