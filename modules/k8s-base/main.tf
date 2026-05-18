@@ -186,24 +186,7 @@ resource "helm_release" "kube_prometheus_stack" {
         }
       }
       grafana = {
-        adminPassword = var.grafana_admin_password
-        persistence = {
-          enabled          = true
-          storageClassName = kubernetes_storage_class_v1.encrypted_gp3.metadata[0].name
-          size             = "5Gi"
-        }
-        sidecar = {
-          dashboards = {
-            enabled         = true
-            label           = "grafana_dashboard"
-            searchNamespace = "ALL"
-          }
-        }
-        ingress = {
-          enabled          = true
-          ingressClassName = "nginx"
-          hosts            = ["grafana.${var.cluster_name}.local"]
-        }
+        enabled = false
       }
       alertmanager = {
         enabled = false
