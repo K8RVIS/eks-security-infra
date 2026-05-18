@@ -95,7 +95,7 @@ variable "node_group" {
     max_size       = 4
     disk_size_gb   = 20
   }
-  
+
 }
 variable "user_iam_arn" {
   description = "EKS 관리자 권한을 부여할 IAM ARN"
@@ -120,4 +120,58 @@ variable "ecr_untagged_expiry_days" {
   description = "Days after which untagged ECR images are expired."
   type        = number
   default     = 7
+}
+
+variable "enabled_cluster_log_types" {
+  description = "CloudWatch Logs로 전송할 EKS control plane 로그 타입."
+  type        = list(string)
+  default     = ["api", "audit", "authenticator"]
+}
+
+variable "break_glass_enabled" {
+  description = "Break-glass Role, EKS 관리자 access entry, 탐지 알림 리소스를 생성할지 여부."
+  type        = bool
+  default     = false
+}
+
+variable "break_glass_trusted_principal_arns" {
+  description = "Break-glass Role을 AssumeRole 할 수 있는 IAM Principal ARN 목록."
+  type        = list(string)
+  default     = []
+}
+
+variable "break_glass_alert_email_addresses" {
+  description = "Break-glass 및 고위험 Kubernetes API 탐지 알림을 받을 이메일 주소 목록."
+  type        = list(string)
+  default     = []
+}
+
+variable "break_glass_alarm_evaluation_period_minutes" {
+  description = "Break-glass 및 고위험 Kubernetes API 알람 평가 주기(분)."
+  type        = number
+  default     = 5
+}
+
+variable "eks_control_plane_log_retention_days" {
+  description = "EKS control plane CloudWatch 로그 보관 기간(일)."
+  type        = number
+  default     = 30
+}
+
+variable "break_glass_require_mfa" {
+  description = "IAM AssumeRole 요청에 MFA 조건을 강제할지 여부."
+  type        = bool
+  default     = false
+}
+
+variable "break_glass_jit_grant_ttl_minutes" {
+  description = "GitHub Actions JIT 권한 부여 기본 유지 시간(분)."
+  type        = number
+  default     = 60
+}
+
+variable "break_glass_jit_state_retention_days" {
+  description = "Break-glass JIT 상태 레코드 보관 기간(일)."
+  type        = number
+  default     = 30
 }

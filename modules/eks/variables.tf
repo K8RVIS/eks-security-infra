@@ -106,3 +106,9 @@ variable "authentication_mode" {
   type        = string
   default     = "API_AND_CONFIG_MAP"
 }
+
+variable "enabled_cluster_log_types" {
+  description = "CloudWatch Logs로 전송할 EKS control plane 로그 타입."
+  type        = list(string)
+  default     = ["api", "audit", "authenticator"]
+}

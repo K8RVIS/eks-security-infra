@@ -3,12 +3,12 @@ mock_provider "helm" {
 }
 
 variables {
-  argocd_chart_version           = "9.4.17"
-  argocd_apps_chart_version      = "2.0.3"
-  gitops_repo_url                = "https://github.com/K8RVIS/eks-secure-infra.git"
-  gitops_target_revision         = "main"
+  argocd_chart_version          = "9.4.17"
+  argocd_apps_chart_version     = "2.0.3"
+  gitops_repo_url               = "https://github.com/K8RVIS/eks-secure-infra.git"
+  gitops_target_revision        = "main"
   gitops_applications_base_path = "manifests/overlays"
-  team_names                     = ["team-a", "team-b", "team-c", "team-d"]
+  team_names                    = ["team-a", "team-b", "team-c", "team-d"]
 }
 
 run "plan_deploys_argocd_and_team_applications" {
