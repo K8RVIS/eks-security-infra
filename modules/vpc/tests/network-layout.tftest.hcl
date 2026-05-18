@@ -70,4 +70,19 @@ run "creates_expected_network_layout" {
     condition     = aws_route.private_default.network_interface_id == aws_instance.fck_nat.primary_network_interface_id
     error_message = "Private subnet default route must point to the fck-nat primary network interface."
   }
+
+  assert {
+    condition     = output.fck_nat_subnet_id == aws_instance.fck_nat.subnet_id
+    error_message = "The module must expose the fck-nat subnet ID as an output."
+  }
+
+  assert {
+    condition     = output.fck_nat_primary_network_interface_id == aws_instance.fck_nat.primary_network_interface_id
+    error_message = "The module must expose the fck-nat primary network interface ID as an output."
+  }
+
+  assert {
+    condition     = output.private_default_route_network_interface_id == aws_route.private_default.network_interface_id
+    error_message = "The module must expose the private default route network interface target as an output."
+  }
 }

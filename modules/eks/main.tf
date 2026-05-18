@@ -127,6 +127,31 @@ resource "aws_eks_cluster" "this" {
   )
 }
 
+data "aws_eks_addon_version" "coredns" {
+  addon_name         = "coredns"
+  kubernetes_version = aws_eks_cluster.this.version
+  most_recent        = true
+}
+
+resource "aws_eks_addon" "vpc_cni" {
+  cluster_name                = aws_eks_cluster.this.name
+  addon_name                  = "vpc-cni"
+  configuration_values        = jsonencode({ enableNetworkPolicy = "true" })
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  depends_on = [
+    aws_eks_cluster.this,
+  ]
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.cluster_name}-vpc-cni"
+    }
+  )
+}
+
 resource "aws_security_group_rule" "cluster_private_endpoint_ingress" {
   for_each = toset(var.cluster_private_endpoint_access_cidrs)
 
@@ -214,7 +239,7 @@ resource "aws_eks_node_group" "this" {
   }
 
   depends_on = [
-    # aws_eks_addon.vpc_cni,
+    aws_eks_addon.vpc_cni,
     aws_iam_role_policy_attachment.node_worker_policy,
     aws_iam_role_policy_attachment.node_cni_policy,
     aws_iam_role_policy_attachment.node_ecr_policy,
@@ -224,6 +249,25 @@ resource "aws_eks_node_group" "this" {
     local.common_tags,
     {
       Name = local.node_group_name
+    }
+  )
+}
+
+resource "aws_eks_addon" "coredns" {
+  cluster_name                = aws_eks_cluster.this.name
+  addon_name                  = "coredns"
+  addon_version               = data.aws_eks_addon_version.coredns.version
+  resolve_conflicts_on_create = "OVERWRITE"
+  resolve_conflicts_on_update = "OVERWRITE"
+
+  depends_on = [
+    aws_eks_node_group.this,
+  ]
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${local.cluster_name}-coredns"
     }
   )
 }
