@@ -126,4 +126,14 @@ run "plan_builds_minimal_eks_cluster" {
     condition     = output.node_group_name == aws_eks_node_group.this.node_group_name
     error_message = "The module must expose the managed node group name as an output."
   }
+  assert {
+    condition     = length(setsubtract(toset(["audit", "authenticator"]), toset(aws_eks_cluster.this.enabled_cluster_log_types))) == 0
+    error_message = "EKS must enable audit and authenticator control plane logs."
+  }
+
+  assert {
+    condition     = aws_cloudwatch_log_group.eks_control_plane.retention_in_days == var.control_plane_log_retention_days
+    error_message = "EKS control plane log group retention must match the configured value."
+  }
+
 }

@@ -49,3 +49,10 @@ node_group = {
 ecr_repository_names     = ["web", "api", "db"]
 ecr_max_image_count      = 10
 ecr_untagged_expiry_days = 7
+
+cluster_enabled_log_types = [
+  "audit",
+  "authenticator",
+]
+
+control_plane_log_retention_days = 7
