@@ -1,0 +1,30 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-image-tag
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: require-non-latest-tag
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+      validate:
+        message: >
+          이미지 태그를 명시해야 하며 'latest'는 허용되지 않습니다.
+          AWS Inspector v2는 특정 버전 태그를 기준으로 스캔합니다.
+          IMMUTABLE 태그가 설정된 ECR의 검증된 버전을 사용하세요.
+        foreach:
+          - list: "request.object.spec.containers"
+            deny:
+              conditions:
+                any:
+                  - key: "{{ element.image }}"
+                    operator: Equals
+                    value: "*:latest"
+                  - key: "{{ element.image }}"
+                    operator: NotContains
+                    value: ":"
