@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: s3-pod-identity-test
+  namespace: team-c
+spec:
+  serviceAccountName: s3-pod-identity-sa
+  containers:
+    - name: awscli
+      image: amazon/aws-cli:2.15.0
+      command: ["sleep", "3600"]
+      resources:
+        requests:
+          cpu: 25m
+          memory: 64Mi
+        limits:
+          cpu: 50m
+          memory: 128Mi

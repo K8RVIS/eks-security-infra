@@ -10,6 +10,8 @@ resources:
   - web-serviceaccount.yaml
   - db-serviceaccount.yaml
   - network-policies.yaml
+  - s3-pod-identity-test-pod.yaml
+  - s3-noauth-test-pod.yaml
 
 patches:
   - path: web-ingress-patch.yaml

@@ -184,3 +184,49 @@ module "argocd" {
     aws_eks_pod_identity_association.external_secrets,
   ]
 }
+data "aws_iam_policy_document" "s3_pod_identity_assume_role" {
+  statement {
+    effect = "Allow"
+
+    principals {
+      type        = "Service"
+      identifiers = ["pods.eks.amazonaws.com"]
+    }
+
+    actions = [
+      "sts:AssumeRole",
+      "sts:TagSession",
+    ]
+  }
+}
+
+resource "aws_iam_role" "s3_pod_identity" {
+  name               = "${data.terraform_remote_state.infra.outputs.cluster_name}-s3-pod-identity"
+  assume_role_policy = data.aws_iam_policy_document.s3_pod_identity_assume_role.json
+}
+
+resource "aws_iam_role_policy_attachment" "s3_pod_identity" {
+  role       = aws_iam_role.s3_pod_identity.name
+  policy_arn = data.terraform_remote_state.infra.outputs.workload_s3_policy_arn
+}
+
+resource "kubernetes_service_account" "s3_pod_identity" {
+  metadata {
+    name      = "s3-pod-identity-sa"
+    namespace = "team-c"
+  }
+
+  depends_on = [module.namespaces]
+}
+
+resource "aws_eks_pod_identity_association" "s3_pod_identity" {
+  cluster_name    = data.terraform_remote_state.infra.outputs.cluster_name
+  namespace       = "team-c"
+  service_account = kubernetes_service_account.s3_pod_identity.metadata[0].name
+  role_arn        = aws_iam_role.s3_pod_identity.arn
+
+  depends_on = [
+    aws_eks_addon.pod_identity_agent,
+    aws_iam_role_policy_attachment.s3_pod_identity,
+  ]
+}

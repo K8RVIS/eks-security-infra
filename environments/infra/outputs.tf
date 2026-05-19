@@ -107,3 +107,17 @@ output "ecr_kms_key_arn" {
   description = "ARN of the KMS key used for ECR repository encryption."
   value       = module.ecr.kms_key_arn
 }
+output "workload_s3_bucket_name" {
+  description = "S3 bucket name used by IRSA and EKS Pod Identity labs."
+  value       = module.workload_s3.bucket_name
+}
+
+output "workload_s3_bucket_arn" {
+  description = "S3 bucket ARN used by IRSA and EKS Pod Identity labs."
+  value       = module.workload_s3.bucket_arn
+}
+
+output "workload_s3_policy_arn" {
+  description = "IAM policy ARN attached to IRSA and EKS Pod Identity roles."
+  value       = module.workload_s3.policy_arn
+}
