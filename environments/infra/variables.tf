@@ -95,14 +95,13 @@ variable "node_group" {
     max_size       = 4
     disk_size_gb   = 20
   }
-  
+
 }
 variable "user_iam_arn" {
   description = "EKS 관리자 권한을 부여할 IAM ARN"
   type        = map(string)
   default     = {}
 }
-
 
 variable "ecr_repository_names" {
   description = "Short names of the ECR repositories to create (prefixed with project_name)."
@@ -120,4 +119,13 @@ variable "ecr_untagged_expiry_days" {
   description = "Days after which untagged ECR images are expired."
   type        = number
   default     = 7
+}
+
+variable "triage_suppressions" {
+  description = "Per-repository Inspector finding suppression rules. Map key = ECR repository short name."
+  type = map(object({
+    reason        = string
+    package_names = list(string)
+  }))
+  default = {}
 }

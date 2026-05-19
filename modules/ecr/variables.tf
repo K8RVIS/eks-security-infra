@@ -51,3 +51,9 @@ variable "default_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "alert_email" {
+  description = "이메일 주소. Inspector CRITICAL/HIGH 발견 시 SNS 알림을 수신한다. 빈 문자열이면 구독 생략."
+  type        = string
+  default     = ""
+}
