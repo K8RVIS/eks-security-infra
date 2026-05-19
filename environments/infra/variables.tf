@@ -38,6 +38,22 @@ variable "private_subnet_cidrs" {
   type        = list(string)
 }
 
+variable "cluster_private_endpoint_access_cidrs" {
+  description = "Private CIDR blocks allowed to access the infra EKS private API endpoint."
+  type        = list(string)
+  default     = []
+}
+
+variable "vpn_vpc_id" {
+  description = "Existing VPN VPC ID peered with the infra VPC for private EKS API access."
+  type        = string
+}
+
+variable "vpn_vpc_cidr" {
+  description = "CIDR block for the existing VPN VPC."
+  type        = string
+}
+
 variable "fck_nat_instance_type" {
   description = "Instance type for the fck-nat instance."
   type        = string
@@ -73,12 +89,18 @@ variable "node_group" {
   })
 
   default = {
-    instance_types = ["t4g.medium"]
-    desired_size   = 2
-    min_size       = 1
-    max_size       = 3
+    instance_types = ["t4g.medium", "t4g.large", "m7g.large", "c7g.large"]
+    desired_size   = 3
+    min_size       = 2
+    max_size       = 4
     disk_size_gb   = 20
   }
+  
+}
+variable "user_iam_arn" {
+  description = "EKS 관리자 권한을 부여할 IAM ARN"
+  type        = map(string)
+  default     = {}
 }
 
 variable "ecr_repository_names" {

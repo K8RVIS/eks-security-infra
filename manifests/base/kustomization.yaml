@@ -3,6 +3,8 @@ kind: Kustomization
 
 resources:
   - kyverno
+  - runtime-secrets
+  - rbac
   - web
   - api
   - db

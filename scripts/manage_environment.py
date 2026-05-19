@@ -4,6 +4,7 @@ import datetime as dt
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +12,9 @@ from typing import Any
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INFRA_DIR = REPO_ROOT / "environments" / "infra"
 PLATFORM_DIR = REPO_ROOT / "environments" / "platform"
+EKS_CLUSTER_ADMIN_POLICY_ARN = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+SSO_RESERVED_ROLE_PATH = ":role/aws-reserved/sso.amazonaws.com/"
+GENERIC_SSO_ACCESS_ENTRY_KEY = "team_user"
 
 
 def default_state() -> dict[str, Any]:
@@ -26,6 +30,70 @@ def default_state() -> dict[str, Any]:
 
 def utc_now_iso() -> str:
     return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def normalize_eks_access_user_arns(values: dict[str, Any], role_to_assume: str = "") -> dict[str, str]:
+    candidates: list[tuple[str, str]] = []
+
+    for raw_name, raw_arn in values.items():
+        name = str(raw_name).strip()
+        arn = str(raw_arn).strip()
+        if not arn:
+            continue
+
+        if (name.startswith("team_") or name.startswith("team-")) and SSO_RESERVED_ROLE_PATH in arn:
+            name = GENERIC_SSO_ACCESS_ENTRY_KEY
+
+        candidates.append((name or GENERIC_SSO_ACCESS_ENTRY_KEY, arn))
+
+    role_to_assume = role_to_assume.strip()
+    if role_to_assume:
+        candidates.append(("github_actions", role_to_assume))
+
+    def priority(name: str) -> tuple[int, str]:
+        preferred = {GENERIC_SSO_ACCESS_ENTRY_KEY: 0, "github_actions": 1, "bot": 2}
+        return (preferred.get(name, 3), name)
+
+    preferred_name_by_arn: dict[str, str] = {}
+    for name, arn in candidates:
+        current_name = preferred_name_by_arn.get(arn)
+        if current_name is None or priority(name) < priority(current_name):
+            preferred_name_by_arn[arn] = name
+
+    normalized: dict[str, str] = {}
+    for arn, name in sorted(preferred_name_by_arn.items(), key=lambda item: priority(item[1])):
+        final_name = name
+        suffix = 2
+        while final_name in normalized:
+            final_name = f"{name}_{suffix}"
+            suffix += 1
+
+        normalized[final_name] = arn
+
+    return normalized
+
+
+def desired_eks_access_user_arns_from_env() -> dict[str, str]:
+    raw = os.environ.get("TF_VAR_user_iam_arn", "").strip()
+    if not raw:
+        return {}
+
+    try:
+        values = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+
+    if not isinstance(values, dict):
+        return {}
+
+    return normalize_eks_access_user_arns(values)
+
+
+def normalize_eks_access_user_arns_env() -> dict[str, str]:
+    normalized = desired_eks_access_user_arns_from_env()
+    if normalized:
+        os.environ["TF_VAR_user_iam_arn"] = json.dumps(normalized, separators=(",", ":"))
+    return normalized
 
 
 class S3StateStore:
@@ -77,6 +145,10 @@ class TerraformRunner:
         platform_state_key: str = "platform/terraform.tfstate",
         platform_infra_state_bucket: str | None = None,
         platform_infra_state_region: str | None = None,
+        eks_cluster_name: str | None = None,
+        eks_client: Any | None = None,
+        elbv2_client: Any | None = None,
+        elb_client: Any | None = None,
     ):
         self.aws_region = aws_region
         self.terraform_state_bucket = terraform_state_bucket
@@ -85,9 +157,17 @@ class TerraformRunner:
         self.platform_state_key = platform_state_key
         self.platform_infra_state_bucket = platform_infra_state_bucket or terraform_state_bucket
         self.platform_infra_state_region = platform_infra_state_region or terraform_state_region
+        self.eks_cluster_name = eks_cluster_name
+        self._eks_client = eks_client
+        self._elbv2_client = elbv2_client
+        self._elb_client = elb_client
 
     def _run(self, args: list[str], cwd: Path) -> None:
         subprocess.run(args, cwd=cwd, check=True)
+
+    def _run_capture(self, args: list[str], cwd: Path) -> str:
+        result = subprocess.run(args, cwd=cwd, check=True, capture_output=True, text=True)
+        return result.stdout
 
     def _init(self, cwd: Path, state_key: str) -> None:
         self._run(
@@ -103,8 +183,120 @@ class TerraformRunner:
         )
 
     def apply_infra(self) -> None:
+        desired_access_entries = normalize_eks_access_user_arns_env()
         self._init(INFRA_DIR, self.infra_state_key)
+        self._import_existing_eks_access_entries(desired_access_entries)
         self._run(["terraform", "apply", "-input=false", "-auto-approve"], cwd=INFRA_DIR)
+
+    @property
+    def eks_client(self):
+        if self._eks_client is None:
+            import boto3
+
+            self._eks_client = boto3.client("eks", region_name=self.aws_region)
+        return self._eks_client
+
+    @property
+    def elbv2_client(self):
+        if self._elbv2_client is None:
+            import boto3
+
+            self._elbv2_client = boto3.client("elbv2", region_name=self.aws_region)
+        return self._elbv2_client
+
+    @property
+    def elb_client(self):
+        if self._elb_client is None:
+            import boto3
+
+            self._elb_client = boto3.client("elb", region_name=self.aws_region)
+        return self._elb_client
+
+    def _terraform_state_addresses(self, cwd: Path = INFRA_DIR) -> set[str]:
+        try:
+            output = self._run_capture(["terraform", "state", "list"], cwd=cwd)
+        except subprocess.CalledProcessError:
+            return set()
+
+        return {line.strip() for line in output.splitlines() if line.strip()}
+
+    def _is_resource_not_found(self, exc: Exception) -> bool:
+        error_response = getattr(exc, "response", {}) or {}
+        error_code = error_response.get("Error", {}).get("Code")
+        return error_code in {"ResourceNotFoundException", "NotFoundException", "LoadBalancerNotFound"}
+
+    def _access_entry_exists(self, principal_arn: str) -> bool:
+        if not self.eks_cluster_name:
+            return False
+
+        try:
+            self.eks_client.describe_access_entry(
+                clusterName=self.eks_cluster_name,
+                principalArn=principal_arn,
+            )
+            return True
+        except Exception as exc:
+            if self._is_resource_not_found(exc) or exc.__class__.__name__ == "ResourceNotFoundException":
+                return False
+            raise
+
+    def _admin_policy_association_exists(self, principal_arn: str) -> bool:
+        if not self.eks_cluster_name:
+            return False
+
+        try:
+            response = self.eks_client.list_associated_access_policies(
+                clusterName=self.eks_cluster_name,
+                principalArn=principal_arn,
+            )
+        except Exception as exc:
+            if self._is_resource_not_found(exc) or exc.__class__.__name__ == "ResourceNotFoundException":
+                return False
+            raise
+
+        return any(
+            policy.get("policyArn") == EKS_CLUSTER_ADMIN_POLICY_ARN
+            for policy in response.get("associatedAccessPolicies", [])
+        )
+
+    def _import_existing_eks_access_entries(self, desired_access_entries: dict[str, str] | None = None) -> None:
+        if not self.eks_cluster_name:
+            return
+
+        desired_access_entries = desired_access_entries or desired_eks_access_user_arns_from_env()
+        if not desired_access_entries:
+            return
+
+        state_addresses = self._terraform_state_addresses()
+        for name, principal_arn in desired_access_entries.items():
+            access_entry_address = f'module.eks.aws_eks_access_entry.this["{name}"]'
+            if access_entry_address not in state_addresses and self._access_entry_exists(principal_arn):
+                self._run(
+                    [
+                        "terraform",
+                        "import",
+                        access_entry_address,
+                        f"{self.eks_cluster_name}:{principal_arn}",
+                    ],
+                    cwd=INFRA_DIR,
+                )
+                state_addresses.add(access_entry_address)
+
+            policy_association_address = f'module.eks.aws_eks_access_policy_association.this["{name}-admin"]'
+            if (
+                policy_association_address not in state_addresses
+                and self._admin_policy_association_exists(principal_arn)
+            ):
+                self._run(
+                    [
+                        "terraform",
+                        "import",
+                        policy_association_address,
+                        f"{self.eks_cluster_name}#{principal_arn}#{EKS_CLUSTER_ADMIN_POLICY_ARN}",
+                    ],
+                    cwd=INFRA_DIR,
+                )
+                state_addresses.add(policy_association_address)
 
     def apply_platform(self, namespaces: list[str]) -> None:
         self._init(PLATFORM_DIR, self.platform_state_key)
@@ -121,29 +313,138 @@ class TerraformRunner:
             cwd=PLATFORM_DIR,
         )
 
-    def destroy_platform(self) -> None:
+    def _platform_var_args(self, namespaces: list[str] | None = None) -> list[str]:
+        args = [
+            f"-var=infra_state_bucket_name={self.platform_infra_state_bucket}",
+            f"-var=infra_state_region={self.platform_infra_state_region}",
+        ]
+        if namespaces is not None:
+            args.append(f"-var=team_names={json.dumps(namespaces)}")
+        return args
+
+    def destroy_platform(self, namespaces: list[str] | None = None) -> None:
         self._init(PLATFORM_DIR, self.platform_state_key)
+        platform_var_args = self._platform_var_args(namespaces)
+        state_addresses = self._terraform_state_addresses(PLATFORM_DIR)
+        argocd_apps_address = "module.argocd.helm_release.argocd_apps"
+        if namespaces and argocd_apps_address in state_addresses:
+            self._run(
+                [
+                    "terraform",
+                    "apply",
+                    "-input=false",
+                    "-auto-approve",
+                    "-target=module.argocd.helm_release.argocd_apps",
+                    *platform_var_args,
+                ],
+                cwd=PLATFORM_DIR,
+            )
+            self._run(
+                [
+                    "terraform",
+                    "destroy",
+                    "-input=false",
+                    "-auto-approve",
+                    "-target=module.argocd.helm_release.argocd_apps",
+                    *platform_var_args,
+                ],
+                cwd=PLATFORM_DIR,
+            )
         self._run(
             [
                 "terraform",
                 "destroy",
                 "-input=false",
                 "-auto-approve",
-                f"-var=infra_state_bucket_name={self.platform_infra_state_bucket}",
-                f"-var=infra_state_region={self.platform_infra_state_region}",
+                *platform_var_args,
             ],
             cwd=PLATFORM_DIR,
         )
 
+    def _infra_outputs(self) -> dict[str, Any]:
+        try:
+            raw_outputs = self._run_capture(["terraform", "output", "-json"], cwd=INFRA_DIR)
+        except subprocess.CalledProcessError:
+            return {}
+
+        if not raw_outputs.strip():
+            return {}
+
+        outputs = json.loads(raw_outputs)
+        return {name: output.get("value") for name, output in outputs.items()}
+
+    def _list_vpc_elbv2_load_balancers(self, vpc_id: str) -> list[dict[str, Any]]:
+        response = self.elbv2_client.describe_load_balancers()
+        return [
+            load_balancer
+            for load_balancer in response.get("LoadBalancers", [])
+            if load_balancer.get("VpcId") == vpc_id
+        ]
+
+    def _list_vpc_classic_load_balancers(self, vpc_id: str) -> list[dict[str, Any]]:
+        response = self.elb_client.describe_load_balancers()
+        return [
+            load_balancer
+            for load_balancer in response.get("LoadBalancerDescriptions", [])
+            if load_balancer.get("VPCId") == vpc_id
+        ]
+
+    def _delete_vpc_load_balancers(self, vpc_id: str) -> None:
+        for load_balancer in self._list_vpc_elbv2_load_balancers(vpc_id):
+            arn = load_balancer["LoadBalancerArn"]
+            name = load_balancer.get("LoadBalancerName", arn)
+            print(f"Deleting ELBv2 load balancer before infra destroy: {name}")
+            try:
+                self.elbv2_client.delete_load_balancer(LoadBalancerArn=arn)
+            except Exception as exc:
+                if not self._is_resource_not_found(exc):
+                    raise
+
+        for load_balancer in self._list_vpc_classic_load_balancers(vpc_id):
+            name = load_balancer["LoadBalancerName"]
+            print(f"Deleting classic ELB before infra destroy: {name}")
+            try:
+                self.elb_client.delete_load_balancer(LoadBalancerName=name)
+            except Exception as exc:
+                if not self._is_resource_not_found(exc):
+                    raise
+
+        self._wait_for_vpc_load_balancers_deleted(vpc_id)
+
+    def _wait_for_vpc_load_balancers_deleted(self, vpc_id: str, timeout_seconds: int = 600) -> None:
+        deadline = time.monotonic() + timeout_seconds
+        while True:
+            remaining = [
+                *(load_balancer.get("LoadBalancerName") or load_balancer.get("LoadBalancerArn", "<unknown>")
+                  for load_balancer in self._list_vpc_elbv2_load_balancers(vpc_id)),
+                *(load_balancer.get("LoadBalancerName", "<unknown>")
+                  for load_balancer in self._list_vpc_classic_load_balancers(vpc_id)),
+            ]
+            if not remaining:
+                return
+
+            if time.monotonic() >= deadline:
+                raise RuntimeError(
+                    "Timed out waiting for VPC load balancers to delete before infra destroy: "
+                    + ", ".join(sorted(remaining))
+                )
+
+            print("Waiting for VPC load balancers to delete before infra destroy: " + ", ".join(sorted(remaining)))
+            time.sleep(15)
+
     def destroy_infra(self) -> None:
         self._init(INFRA_DIR, self.infra_state_key)
+        vpc_id = self._infra_outputs().get("vpc_id")
+        if vpc_id:
+            self._delete_vpc_load_balancers(vpc_id)
         self._run(["terraform", "destroy", "-input=false", "-auto-approve"], cwd=INFRA_DIR)
 
 
 class EnvironmentOrchestrator:
-    def __init__(self, state_store: Any, terraform_runner: Any):
+    def __init__(self, state_store: Any, terraform_runner: Any, refresh_infra_on_start: bool = False):
         self.state_store = state_store
         self.terraform_runner = terraform_runner
+        self.refresh_infra_on_start = refresh_infra_on_start
 
     def run(self, operation: str, slack_user_id: str, namespace: str, request_id: str) -> dict[str, Any]:
         current_state = self._normalize_state(self.state_store.read_state())
@@ -196,7 +497,11 @@ class EnvironmentOrchestrator:
         next_state["active_users"][slack_user_id] = namespace
         next_state["active_namespaces"] = sorted(set(next_state["active_users"].values()))
 
-        should_apply_infra = current_state.get("infra_status") != "running" or not current_state["active_users"]
+        should_apply_infra = (
+            current_state.get("infra_status") != "running"
+            or not current_state["active_users"]
+            or self.refresh_infra_on_start
+        )
         if should_apply_infra:
             self.terraform_runner.apply_infra()
 
@@ -216,7 +521,7 @@ class EnvironmentOrchestrator:
             return next_state
 
         if not next_state["active_users"]:
-            self.terraform_runner.destroy_platform()
+            self.terraform_runner.destroy_platform(current_state["active_namespaces"])
             self.terraform_runner.destroy_infra()
             next_state["infra_status"] = "stopped"
             return next_state
@@ -237,6 +542,7 @@ def build_runner_from_env() -> TerraformRunner:
         platform_state_key=os.environ.get("PLATFORM_TERRAFORM_STATE_KEY", "platform/terraform.tfstate"),
         platform_infra_state_bucket=os.environ.get("PLATFORM_INFRA_STATE_BUCKET"),
         platform_infra_state_region=os.environ.get("PLATFORM_INFRA_STATE_REGION"),
+        eks_cluster_name=os.environ.get("EKS_CLUSTER_NAME") or "eks-secure-infra-dev",
     )
 
 
@@ -259,6 +565,7 @@ def main() -> None:
     orchestrator = EnvironmentOrchestrator(
         state_store=build_state_store_from_env(),
         terraform_runner=build_runner_from_env(),
+        refresh_infra_on_start=bool(os.environ.get("TF_VAR_user_iam_arn", "").strip()),
     )
     result = orchestrator.run(
         operation=args.operation,

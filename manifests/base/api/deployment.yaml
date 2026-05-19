@@ -4,7 +4,7 @@ metadata:
   name: api
   labels:
     app.kubernetes.io/name: api
-    app.kubernetes.io/version: "1.0"
+    training.k8rvis.io/security-baseline: baseline
 spec:
   replicas: 1
   selector:
@@ -14,23 +14,22 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: api
+        training.k8rvis.io/security-baseline: baseline
     spec:
       serviceAccountName: default
       automountServiceAccountToken: false
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 65534
-        runAsGroup: 65534
-        fsGroup: 65534
-        seccompProfile:
-          type: RuntimeDefault
       containers:
         - name: api
           image: ealen/echo-server
           imagePullPolicy: Always
           env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: app-runtime-secrets
+                  key: REDIS_PASSWORD
             - name: REDIS_URL
-              value: redis://:training-password@db:6379/0
+              value: redis://:$(REDIS_PASSWORD)@db:6379/0
             - name: EXTERNAL_POSTGRES_HOST
               value: reporting-db.training.local
             - name: EXTERNAL_POSTGRES_PORT
@@ -40,19 +39,23 @@ spec:
             - name: EXTERNAL_POSTGRES_USER
               value: training-api
             - name: EXTERNAL_POSTGRES_PASSWORD
-              value: training-external-password
+              valueFrom:
+                secretKeyRef:
+                  name: app-runtime-secrets
+                  key: EXTERNAL_POSTGRES_PASSWORD
           ports:
             - containerPort: 80
               name: http
           securityContext:
             runAsNonRoot: true
-            runAsUser: 65534
-            runAsGroup: 65534
+            runAsUser: 1000
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             capabilities:
               drop:
                 - ALL
+            seccompProfile:
+              type: RuntimeDefault
           resources:
             requests:
               cpu: 100m

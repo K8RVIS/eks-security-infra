@@ -101,6 +101,38 @@ class OrchestratorTests(unittest.TestCase):
         self.assertEqual(result["active_users"], {"U123": "team-a", "U456": "team-b"})
         self.assertEqual(result["active_namespaces"], ["team-a", "team-b"])
 
+    def test_start_refreshes_infra_before_platform_when_requested(self):
+        module = load_module()
+        initial_state = module.default_state()
+        initial_state.update(
+            {
+                "infra_status": "running",
+                "active_users": {"U123": "team-a"},
+                "active_namespaces": ["team-a"],
+            }
+        )
+        state_store = FakeStateStore(initial_state)
+        terraform_runner = RecordingTerraformRunner()
+        orchestrator = module.EnvironmentOrchestrator(
+            state_store=state_store,
+            terraform_runner=terraform_runner,
+            refresh_infra_on_start=True,
+        )
+
+        result = orchestrator.run(
+            operation="start",
+            slack_user_id="U456",
+            namespace="team-b",
+            request_id="req-2-refresh",
+        )
+
+        self.assertEqual(
+            terraform_runner.calls,
+            [("apply_infra", None), ("apply_platform", ["team-a", "team-b"])],
+        )
+        self.assertEqual(result["active_users"], {"U123": "team-a", "U456": "team-b"})
+        self.assertEqual(result["active_namespaces"], ["team-a", "team-b"])
+
     def test_stop_with_remaining_users_reapplies_platform_subset(self):
         module = load_module()
         initial_state = module.default_state()

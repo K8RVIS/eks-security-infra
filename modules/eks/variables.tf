@@ -33,6 +33,22 @@ variable "node_subnet_ids" {
   }
 }
 
+variable "cluster_private_endpoint_access_cidrs" {
+  description = "Private CIDR blocks allowed to access the EKS private API endpoint through the cluster security group."
+  type        = list(string)
+  default     = []
+
+  validation {
+    condition     = alltrue([for cidr in var.cluster_private_endpoint_access_cidrs : can(cidrhost(cidr, 0))])
+    error_message = "Each private endpoint access CIDR must be a valid CIDR block."
+  }
+
+  validation {
+    condition     = !contains(var.cluster_private_endpoint_access_cidrs, "0.0.0.0/0") && !contains(var.cluster_private_endpoint_access_cidrs, "::/0")
+    error_message = "Do not allow 0.0.0.0/0 or ::/0 to the EKS private API endpoint."
+  }
+}
+
 variable "kubernetes_version" {
   description = "Kubernetes version for the EKS cluster and managed node group."
   type        = string
@@ -56,10 +72,10 @@ variable "node_group" {
   })
 
   default = {
-    instance_types = ["t4g.medium"]
-    desired_size   = 2
-    min_size       = 1
-    max_size       = 3
+    instance_types = ["t4g.medium", "t4g.large", "m7g.large", "c7g.large"]
+    desired_size   = 3
+    min_size       = 2
+    max_size       = 4
     disk_size_gb   = 20
   }
 
@@ -78,4 +94,15 @@ variable "default_tags" {
   description = "Additional tags merged into all EKS resources."
   type        = map(string)
   default     = {}
+}
+variable "access_entries" {
+  description = "EKS cluster에 접속할 IAM user 및 권한 mapping"
+  type        = any
+  default     = {}
+}
+
+variable "authentication_mode" {
+  description = "EKS 클러스터 인증 모드"
+  type        = string
+  default     = "API_AND_CONFIG_MAP"
 }

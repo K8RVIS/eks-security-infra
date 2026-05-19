@@ -4,7 +4,7 @@ metadata:
   name: web
   labels:
     app.kubernetes.io/name: web
-    app.kubernetes.io/version: "1.0"
+    training.k8rvis.io/security-baseline: baseline
 spec:
   replicas: 1
   selector:
@@ -14,25 +14,24 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: web
+        training.k8rvis.io/security-baseline: baseline
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 65534
-        runAsGroup: 65534
-        fsGroup: 65534
+        runAsUser: 101
+        fsGroup: 101
         seccompProfile:
           type: RuntimeDefault
       containers:
         - name: web
-          image: nginx:1.27.5
+          image: nginxinc/nginx-unprivileged:1.27
           imagePullPolicy: Always
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: http
           securityContext:
             runAsNonRoot: true
-            runAsUser: 65534
-            runAsGroup: 65534
+            runAsUser: 101
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
             capabilities:
@@ -48,26 +47,26 @@ spec:
           livenessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 10
           readinessProbe:
             httpGet:
               path: /
-              port: 80
+              port: 8080
             initialDelaySeconds: 5
             periodSeconds: 5
           volumeMounts:
-            - name: nginx-cache
+            - name: cache
               mountPath: /var/cache/nginx
-            - name: nginx-run
+            - name: run
               mountPath: /var/run
-            - name: nginx-tmp
+            - name: tmp
               mountPath: /tmp
       volumes:
-        - name: nginx-cache
+        - name: cache
           emptyDir: {}
-        - name: nginx-run
+        - name: run
           emptyDir: {}
-        - name: nginx-tmp
+        - name: tmp
           emptyDir: {}

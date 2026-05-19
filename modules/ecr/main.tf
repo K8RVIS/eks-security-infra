@@ -165,10 +165,6 @@ data "aws_iam_policy_document" "sns_eventbridge_publish" {
 
 # ---------------------------------------------------------------------------
 # EventBridge rule — routes Inspector2 CRITICAL/HIGH findings to SNS
-#
-# Inspector2 emits a "Inspector2 Finding" event for every new or updated
-# finding. We filter on severity CRITICAL and HIGH so that the security
-# team is notified immediately; MEDIUM/LOW go to the normal backlog.
 # ---------------------------------------------------------------------------
 resource "aws_cloudwatch_event_rule" "ecr_critical_findings" {
   name        = "${var.project_name}-ecr-critical-findings"

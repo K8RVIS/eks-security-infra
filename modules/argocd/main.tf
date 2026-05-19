@@ -1,8 +1,9 @@
 locals {
   team_applications = {
     for team_name in var.team_names : team_name => {
-      namespace = var.argocd_namespace
-      project   = var.argocd_project_name
+      finalizers = ["resources-finalizer.argocd.argoproj.io"]
+      namespace  = var.argocd_namespace
+      project    = var.argocd_project_name
       source = {
         repoURL        = var.gitops_repo_url
         targetRevision = var.gitops_target_revision
@@ -13,6 +14,10 @@ locals {
         namespace = team_name
       }
       syncPolicy = {
+        automated = {
+          prune    = true
+          selfHeal = true
+        }
         syncOptions = ["CreateNamespace=true"]
       }
     }

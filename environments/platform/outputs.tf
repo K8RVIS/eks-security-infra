@@ -23,6 +23,16 @@ output "aws_node_termination_handler_release_name" {
   value       = module.k8s_base.aws_node_termination_handler_release_name
 }
 
+output "aws_load_balancer_controller_release_name" {
+  description = "Helm release name for AWS Load Balancer Controller."
+  value       = module.k8s_base.aws_load_balancer_controller_release_name
+}
+
+output "aws_load_balancer_controller_role_arn" {
+  description = "IAM role ARN associated with AWS Load Balancer Controller through EKS Pod Identity."
+  value       = aws_iam_role.aws_load_balancer_controller.arn
+}
+
 output "ingress_release_name" {
   description = "Helm release name for ingress-nginx."
   value       = module.k8s_base.ingress_release_name
@@ -36,6 +46,26 @@ output "ingress_namespace" {
 output "ingress_service_name" {
   description = "Service name exposed by ingress-nginx."
   value       = module.k8s_base.ingress_service_name
+}
+
+output "external_secrets_release_name" {
+  description = "Helm release name for External Secrets Operator."
+  value       = module.k8s_base.external_secrets_release_name
+}
+
+output "external_secrets_namespace" {
+  description = "Namespace where External Secrets Operator is deployed."
+  value       = module.k8s_base.external_secrets_namespace
+}
+
+output "external_secrets_role_arn" {
+  description = "IAM role ARN associated with the External Secrets Operator service account."
+  value       = aws_iam_role.external_secrets.arn
+}
+
+output "encrypted_storage_class_name" {
+  description = "Encrypted gp3 StorageClass name for EBS-backed workload PVCs."
+  value       = module.k8s_base.encrypted_storage_class_name
 }
 
 output "team_namespace_names" {
