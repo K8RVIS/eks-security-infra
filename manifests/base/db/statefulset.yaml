@@ -4,7 +4,7 @@ metadata:
   name: db
   labels:
     app.kubernetes.io/name: db
-    training.k8rvis.io/security-baseline: insecure
+    training.k8rvis.io/security-baseline: baseline
 spec:
   serviceName: db
   replicas: 1
@@ -15,8 +15,10 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: db
-        training.k8rvis.io/security-baseline: insecure
+        training.k8rvis.io/security-baseline: baseline
     spec:
+      securityContext:
+        fsGroup: 999
       containers:
         - name: db
           image: redis:7
@@ -27,20 +29,38 @@ spec:
             - redis-server --appendonly yes --requirepass "$REDIS_PASSWORD"
           env:
             - name: REDIS_PASSWORD
-              value: training-password
+              valueFrom:
+                secretKeyRef:
+                  name: app-runtime-secrets
+                  key: REDIS_PASSWORD
           ports:
             - containerPort: 6379
               name: redis
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:       
+              drop: ["ALL"]
+            seccompProfile:     
+              type: RuntimeDefault
           volumeMounts:
             - name: redis-data
               mountPath: /data
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: redis-data
         labels:
           app.kubernetes.io/name: db
-          training.k8rvis.io/security-baseline: insecure
+          training.k8rvis.io/security-baseline: baseline
       spec:
+        storageClassName: encrypted-gp3
         accessModes:
           - ReadWriteOnce
         resources:

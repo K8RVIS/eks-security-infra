@@ -16,12 +16,15 @@ variables {
   node_subnet_ids    = ["subnet-public-a", "subnet-public-b"]
   kubernetes_version = "1.34"
   node_ami_type      = "AL2023_ARM_64_STANDARD"
+  cluster_public_access_cidrs = [
+    "115.136.89.40/32",
+  ]
 
   node_group = {
-    instance_types = ["t4g.medium"]
-    desired_size   = 2
-    min_size       = 1
-    max_size       = 3
+    instance_types = ["t4g.medium", "t4g.large", "m7g.large", "c7g.large"]
+    desired_size   = 3
+    min_size       = 2
+    max_size       = 4
     disk_size_gb   = 20
   }
 
@@ -50,8 +53,48 @@ run "plan_builds_minimal_eks_cluster" {
   }
 
   assert {
+    condition     = aws_eks_cluster.this.vpc_config[0].endpoint_private_access && aws_eks_cluster.this.vpc_config[0].endpoint_public_access
+    error_message = "The EKS cluster must keep both private and public API endpoint access enabled for the transition phase."
+  }
+
+  assert {
+    condition     = length(setsubtract(toset(var.cluster_public_access_cidrs), toset(aws_eks_cluster.this.vpc_config[0].public_access_cidrs))) == 0
+    error_message = "The EKS public API endpoint must be restricted to the configured public access CIDRs."
+  }
+
+  assert {
+    condition     = !contains(aws_eks_cluster.this.vpc_config[0].public_access_cidrs, "0.0.0.0/0")
+    error_message = "The EKS public API endpoint must not allow 0.0.0.0/0."
+  }
+
+  assert {
     condition     = aws_eks_node_group.this.capacity_type == "SPOT"
     error_message = "Managed node group must use SPOT capacity for the cost-optimized lab environment."
+  }
+
+  assert {
+    condition     = aws_iam_role_policy_attachment.node_ebs_csi_policy.policy_arn == "arn:aws:iam::aws:policy/service-role/AmazonEBSCSIDriverPolicy"
+    error_message = "Node role must allow the EBS CSI driver to provision persistent volumes."
+  }
+
+  assert {
+    condition     = aws_eks_addon.ebs_csi_driver.addon_name == "aws-ebs-csi-driver"
+    error_message = "EKS must install the managed EBS CSI driver addon for dynamic EBS volume provisioning."
+  }
+
+  assert {
+    condition     = length(aws_eks_node_group.this.instance_types) > 1
+    error_message = "Managed node group must use multiple spot instance type candidates to reduce interruption concentration risk."
+  }
+
+  assert {
+    condition     = length(setsubtract(toset(var.node_group.instance_types), toset(aws_eks_node_group.this.instance_types))) == 0
+    error_message = "Managed node group must pass through the configured spot instance type candidates."
+  }
+
+  assert {
+    condition     = !contains(aws_eks_node_group.this.instance_types, "m7g.medium") && !contains(aws_eks_node_group.this.instance_types, "c7g.medium")
+    error_message = "Managed node group must avoid small Graviton medium candidates with low pod capacity."
   }
 
   assert {
@@ -67,6 +110,11 @@ run "plan_builds_minimal_eks_cluster" {
   assert {
     condition     = aws_eks_node_group.this.scaling_config[0].desired_size == var.node_group.desired_size
     error_message = "Managed node group desired size must match the configured value."
+  }
+
+  assert {
+    condition     = aws_eks_node_group.this.scaling_config[0].desired_size == 3 && aws_eks_node_group.this.scaling_config[0].min_size == 2 && aws_eks_node_group.this.scaling_config[0].max_size == 4
+    error_message = "Managed node group must keep enough baseline pod slots for platform addons."
   }
 
   assert {

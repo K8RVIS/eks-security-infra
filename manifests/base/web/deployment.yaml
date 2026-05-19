@@ -4,7 +4,7 @@ metadata:
   name: web
   labels:
     app.kubernetes.io/name: web
-    training.k8rvis.io/security-baseline: insecure
+    training.k8rvis.io/security-baseline: baseline
 spec:
   replicas: 1
   selector:
@@ -14,14 +14,34 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: web
-        training.k8rvis.io/security-baseline: insecure
+        training.k8rvis.io/security-baseline: baseline
     spec:
       containers:
         - name: web
-          image: nginx:1.27.5
+          image: nginxinc/nginx-unprivileged:1.27
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: http
           securityContext:
-            runAsNonRoot: false
-            runAsUser: 0
+            runAsNonRoot: true
+            runAsUser: 101
+            readOnlyRootFilesystem: true
+            allowPrivilegeEscalation: false
+            capabilities:       
+              drop: ["ALL"]
+            seccompProfile:     
+              type: RuntimeDefault
+          volumeMounts:
+            - name: cache
+              mountPath: /var/cache/nginx
+            - name: run
+              mountPath: /var/run
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: cache
+          emptyDir: {}
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}

@@ -23,6 +23,11 @@ output "cluster_security_group_id" {
   value       = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id
 }
 
+output "cluster_subnet_ids" {
+  description = "Subnet IDs used by the EKS control plane."
+  value       = var.cluster_subnet_ids
+}
+
 output "node_group_name" {
   description = "Name of the default managed node group."
   value       = aws_eks_node_group.this.node_group_name
@@ -36,4 +41,9 @@ output "node_group_arn" {
 output "node_group_role_arn" {
   description = "IAM role ARN used by the default managed node group."
   value       = aws_iam_role.node.arn
+}
+
+output "node_subnet_ids" {
+  description = "Subnet IDs used by the default managed node group."
+  value       = var.node_subnet_ids
 }

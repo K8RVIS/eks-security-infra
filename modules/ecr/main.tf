@@ -131,4 +131,3 @@ resource "aws_ecr_registry_scanning_configuration" "this" {
   # Inspector must be enabled before we can switch the registry to ENHANCED
   depends_on = [aws_inspector2_enabler.ecr]
 }
-
