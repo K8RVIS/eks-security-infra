@@ -16,9 +16,16 @@ spec:
         app.kubernetes.io/name: web
         training.k8rvis.io/security-baseline: baseline
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101
+        fsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: web
           image: nginxinc/nginx-unprivileged:1.27
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               name: http
@@ -27,10 +34,28 @@ spec:
             runAsUser: 101
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
-            capabilities:       
-              drop: ["ALL"]
-            seccompProfile:     
-              type: RuntimeDefault
+            capabilities:
+              drop:
+                - ALL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
           volumeMounts:
             - name: cache
               mountPath: /var/cache/nginx

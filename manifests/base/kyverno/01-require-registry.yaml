@@ -1,0 +1,23 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-private-registry
+  namespace: kyverno
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+  - name: validate-registry
+    match:
+      resources:
+        kinds:
+        - Pod
+    validate:
+      message: "Private ECR registry만 허용됩니다. Public registry 이미지는 사용할 수 없습니다."
+      anyPattern:
+      - spec:
+          containers:
+          - image: "*.dkr.ecr.*.amazonaws.com/*"
+      - spec:
+          containers:
+          - image: "*.dkr.ecr.*.amazonaws.com.cn/*"

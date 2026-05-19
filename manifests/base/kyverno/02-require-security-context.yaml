@@ -1,0 +1,58 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-security-context
+  namespace: kyverno
+spec:
+  validationFailureAction: enforce
+  background: true
+  rules:
+  - name: validate-runAsNonRoot
+    match:
+      resources:
+        kinds:
+        - Pod
+    validate:
+      message: "runAsNonRoot: true 설정이 필수입니다."
+      pattern:
+        spec:
+          securityContext:
+            runAsNonRoot: true
+  - name: validate-readOnlyRootFilesystem
+    match:
+      resources:
+        kinds:
+        - Pod
+    validate:
+      message: "readOnlyRootFilesystem: true 설정이 필수입니다. /tmp는 emptyDir로 마운트하세요."
+      pattern:
+        spec:
+          containers:
+          - securityContext:
+              readOnlyRootFilesystem: true
+  - name: validate-allowPrivilegeEscalation
+    match:
+      resources:
+        kinds:
+        - Pod
+    validate:
+      message: "allowPrivilegeEscalation: false 설정이 필수입니다."
+      pattern:
+        spec:
+          containers:
+          - securityContext:
+              allowPrivilegeEscalation: false
+  - name: validate-capabilities
+    match:
+      resources:
+        kinds:
+        - Pod
+    validate:
+      message: "모든 Linux capabilities를 제거해야 합니다 (capabilities.drop: ALL)."
+      pattern:
+        spec:
+          containers:
+          - securityContext:
+              capabilities:
+                drop:
+                - ALL

@@ -107,3 +107,8 @@ output "ecr_kms_key_arn" {
   description = "ARN of the KMS key used for ECR repository encryption."
   value       = module.ecr.kms_key_arn
 }
+
+output "ecr_findings_sns_topic_arn" {
+  description = "ARN of the SNS topic receiving CRITICAL/HIGH Inspector v2 ECR findings."
+  value       = module.ecr.ecr_findings_sns_topic_arn
+}

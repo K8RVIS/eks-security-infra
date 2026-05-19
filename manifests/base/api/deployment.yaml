@@ -21,6 +21,7 @@ spec:
       containers:
         - name: api
           image: ealen/echo-server
+          imagePullPolicy: Always
           env:
             - name: REDIS_PASSWORD
               valueFrom:
@@ -50,7 +51,33 @@ spec:
             runAsUser: 1000
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
-            capabilities:       
-              drop: ["ALL"]
-            seccompProfile:     
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
               type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

@@ -131,3 +131,61 @@ resource "aws_ecr_registry_scanning_configuration" "this" {
   # Inspector must be enabled before we can switch the registry to ENHANCED
   depends_on = [aws_inspector2_enabler.ecr]
 }
+
+# ---------------------------------------------------------------------------
+# SNS topic — receives CRITICAL/HIGH finding alerts
+# ---------------------------------------------------------------------------
+resource "aws_sns_topic" "ecr_findings" {
+  name = "${var.project_name}-ecr-critical-findings"
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_name}-ecr-critical-findings"
+  })
+}
+
+# Allow EventBridge to publish to this SNS topic
+resource "aws_sns_topic_policy" "ecr_findings" {
+  arn    = aws_sns_topic.ecr_findings.arn
+  policy = data.aws_iam_policy_document.sns_eventbridge_publish.json
+}
+
+data "aws_iam_policy_document" "sns_eventbridge_publish" {
+  statement {
+    sid       = "AllowEventBridgePublish"
+    effect    = "Allow"
+    actions   = ["sns:Publish"]
+    resources = [aws_sns_topic.ecr_findings.arn]
+
+    principals {
+      type        = "Service"
+      identifiers = ["events.amazonaws.com"]
+    }
+  }
+}
+
+# ---------------------------------------------------------------------------
+# EventBridge rule — routes Inspector2 CRITICAL/HIGH findings to SNS
+# ---------------------------------------------------------------------------
+resource "aws_cloudwatch_event_rule" "ecr_critical_findings" {
+  name        = "${var.project_name}-ecr-critical-findings"
+  description = "Route Inspector v2 CRITICAL/HIGH ECR findings to SNS"
+
+  event_pattern = jsonencode({
+    source        = ["aws.inspector2"]
+    "detail-type" = ["Inspector2 Finding"]
+    detail = {
+      severity = ["CRITICAL", "HIGH"]
+      type     = ["PACKAGE_VULNERABILITY"]
+    }
+  })
+
+  tags = merge(local.common_tags, {
+    Name = "${var.project_name}-ecr-critical-findings"
+  })
+}
+
+resource "aws_cloudwatch_event_target" "ecr_critical_findings_sns" {
+  rule      = aws_cloudwatch_event_rule.ecr_critical_findings.name
+  target_id = "send-to-ecr-findings-sns"
+  arn       = aws_sns_topic.ecr_findings.arn
+}

@@ -22,3 +22,8 @@ output "kms_key_id" {
   description = "ID of the KMS key used to encrypt ECR repositories."
   value       = aws_kms_key.ecr.key_id
 }
+
+output "ecr_findings_sns_topic_arn" {
+  description = "ARN of the SNS topic that receives CRITICAL/HIGH Inspector v2 findings."
+  value       = aws_sns_topic.ecr_findings.arn
+}

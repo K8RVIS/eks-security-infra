@@ -1,0 +1,8 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - 01-require-registry.yaml
+  - 02-require-security-context.yaml
+  - 03-mutate-default-securitycontext.yaml
+  - 04-require-image-tag.yaml

@@ -103,7 +103,6 @@ variable "user_iam_arn" {
   default     = {}
 }
 
-
 variable "ecr_repository_names" {
   description = "Short names of the ECR repositories to create (prefixed with project_name)."
   type        = list(string)

@@ -1,0 +1,54 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: add-default-securitycontext
+  namespace: kyverno
+spec:
+  validationFailureAction: audit
+  background: true
+  rules:
+  - name: mutate-pod-securitycontext
+    match:
+      resources:
+        kinds:
+        - Pod
+    mutate:
+      patchStrategicMerge:
+        spec:
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+            runAsGroup: 65534
+            fsGroup: 65534
+            seccompProfile:
+              type: RuntimeDefault
+  - name: mutate-container-securitycontext
+    match:
+      resources:
+        kinds:
+        - Pod
+    mutate:
+      patchStrategicMerge:
+        spec:
+          containers:
+          - (name): "*"
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              runAsNonRoot: true
+              runAsUser: 65534
+              runAsGroup: 65534
+              capabilities:
+                drop:
+                - ALL
+  - name: mutate-volumes-tmp
+    match:
+      resources:
+        kinds:
+        - Pod
+    mutate:
+      patchStrategicMerge:
+        spec:
+          volumes:
+          - name: tmp-volume
+            emptyDir: {}

@@ -22,6 +22,7 @@ spec:
       containers:
         - name: db
           image: redis:7
+          imagePullPolicy: Always
           command:
             - /bin/sh
             - -c
@@ -41,10 +42,30 @@ spec:
             runAsUser: 999
             readOnlyRootFilesystem: true
             allowPrivilegeEscalation: false
-            capabilities:       
-              drop: ["ALL"]
-            seccompProfile:     
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
               type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            tcpSocket:
+              port: 6379
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 5
           volumeMounts:
             - name: redis-data
               mountPath: /data
