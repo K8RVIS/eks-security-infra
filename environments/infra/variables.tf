@@ -121,12 +121,6 @@ variable "ecr_untagged_expiry_days" {
   default     = 7
 }
 
-variable "alert_email" {
-  description = "Inspector CRITICAL/HIGH finding alert email"
-  type        = string
-  default     = ""
-}
-
 variable "triage_suppressions" {
   description = "Per-repository Inspector finding suppression rules. Map key = ECR repository short name."
   type = map(object({

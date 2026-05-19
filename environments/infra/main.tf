@@ -53,6 +53,5 @@ module "ecr" {
   max_image_count      = var.ecr_max_image_count
   untagged_expiry_days = var.ecr_untagged_expiry_days
   default_tags         = var.default_tags
-  alert_email          = var.alert_email
   triage_suppressions  = var.triage_suppressions
 }
