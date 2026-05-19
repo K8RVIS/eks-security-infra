@@ -125,6 +125,18 @@ variable "external_secrets_secret_arns" {
   default     = ["arn:aws:secretsmanager:*:*:secret:/eks-secure-infra/app/*"]
 }
 
+variable "falco_namespace" {
+  description = "Namespace used for the Falco release."
+  type        = string
+  default     = "falco"
+}
+
+variable "falco_chart_version" {
+  description = "Pinned chart version for Falco."
+  type        = string
+  default     = "8.0.5"
+}
+
 variable "argocd_namespace" {
   description = "Namespace used for the ArgoCD installation."
   type        = string

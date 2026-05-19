@@ -165,6 +165,16 @@ module "namespaces" {
   depends_on = [module.k8s_base]
 }
 
+module "falco" {
+  source = "../../modules/falco"
+
+  helm_release_timeout_seconds = var.helm_release_timeout_seconds
+  falco_namespace              = var.falco_namespace
+  falco_chart_version          = var.falco_chart_version
+
+  depends_on = [module.k8s_base]
+}
+
 module "argocd" {
   source = "../../modules/argocd"
 
@@ -180,6 +190,7 @@ module "argocd" {
 
   depends_on = [
     module.k8s_base,
+    module.falco,
     module.namespaces,
     aws_eks_pod_identity_association.external_secrets,
   ]

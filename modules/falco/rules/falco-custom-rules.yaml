@@ -1,0 +1,135 @@
+- list: k8s_secret_mount_prefixes
+  items: [/var/run/secrets, /etc/secrets, /run/secrets, /mnt/secrets, /opt/secrets]
+
+- list: k8s_serviceaccount_token_prefixes
+  items: [/var/run/secrets/kubernetes.io/serviceaccount]
+
+- list: secret_file_reader_binaries
+  items: [cat, less, more, head, tail, grep, egrep, fgrep, awk, sed, strings, base64, xxd, od, hexdump, jq, vi, vim, nano, busybox]
+
+- list: secret_path_discovery_binaries
+  items: [ls, find, stat, tree, dirname, readlink]
+
+- list: container_shell_binaries
+  items: [sh, bash, dash, ash, zsh, ksh]
+
+- macro: k8s_runtime_secret_path
+  condition: >
+    (
+      fd.name pmatch (k8s_secret_mount_prefixes) or
+      fs.path.name pmatch (k8s_secret_mount_prefixes)
+    )
+
+- macro: k8s_serviceaccount_token_path
+  condition: >
+    (
+      fd.name pmatch (k8s_serviceaccount_token_prefixes) or
+      fs.path.name pmatch (k8s_serviceaccount_token_prefixes)
+    )
+
+- macro: workload_secret_volume_path
+  condition: >
+    k8s_runtime_secret_path and
+    not k8s_serviceaccount_token_path
+
+- macro: container_shell_process
+  condition: proc.name in (container_shell_binaries)
+
+- macro: process_environment_file
+  condition: >
+    (
+      fd.name contains "/proc/" and fd.name endswith "/environ"
+    )
+
+- rule: Manual Secret File Inspection In Container
+  desc: Detect command-line tools manually reading Kubernetes Secret volume files from within a container
+  condition: >
+    open_read and
+    container and
+    k8s_runtime_secret_path and
+    proc.name in (secret_file_reader_binaries)
+  output: >
+    Manual secret file inspection detected
+    (evt.type=%evt.type user=%user.name command=%proc.cmdline parent=%proc.pname
+    file=%fd.name normalized_file=%fs.path.name container=%container.name
+    image=%container.image.repository k8s.ns=%k8s.ns.name pod=%k8s.pod.name)
+  priority: WARNING
+  tags: [container, k8s, secret, data_protection, manual_access]
+
+- rule: Read Workload Secret Volume From Container
+  desc: Detect read access to workload-mounted Secret paths excluding the default service account token path
+  condition: >
+    open_read and
+    container and
+    workload_secret_volume_path
+  output: >
+    Workload secret volume read detected
+    (evt.type=%evt.type user=%user.name command=%proc.cmdline parent=%proc.pname
+    file=%fd.name normalized_file=%fs.path.name container=%container.name
+    image=%container.image.repository k8s.ns=%k8s.ns.name pod=%k8s.pod.name)
+  priority: NOTICE
+  tags: [container, k8s, secret, data_protection, file_access]
+
+- rule: Read Kubernetes ServiceAccount Token From Container
+  desc: Detect read access to a Kubernetes projected service account token from within a container
+  condition: >
+    open_read and
+    container and
+    k8s_serviceaccount_token_path
+  output: >
+    Kubernetes service account token read detected
+    (evt.type=%evt.type user=%user.name command=%proc.cmdline parent=%proc.pname
+    file=%fd.name normalized_file=%fs.path.name container=%container.name
+    image=%container.image.repository k8s.ns=%k8s.ns.name pod=%k8s.pod.name)
+  priority: NOTICE
+  tags: [container, k8s, serviceaccount, token, data_protection]
+
+- rule: Secret Path Discovery In Container
+  desc: Detect directory discovery commands targeting common Secret mount paths inside a container
+  condition: >
+    spawned_process and
+    container and
+    proc.name in (secret_path_discovery_binaries) and
+    (
+      proc.args contains "/var/run/secrets" or
+      proc.args contains "/etc/secrets" or
+      proc.args contains "/run/secrets" or
+      proc.args contains "/mnt/secrets" or
+      proc.args contains "/opt/secrets"
+    )
+  output: >
+    Secret path discovery command detected
+    (evt.type=%evt.type user=%user.name command=%proc.cmdline parent=%proc.pname
+    container=%container.name image=%container.image.repository
+    k8s.ns=%k8s.ns.name pod=%k8s.pod.name)
+  priority: NOTICE
+  tags: [container, k8s, secret, data_protection, discovery]
+
+- rule: Process Environment File Read In Container
+  desc: Detect command-line tools reading /proc environment files that may expose env-injected secrets
+  condition: >
+    open_read and
+    container and
+    process_environment_file and
+    proc.name in (secret_file_reader_binaries)
+  output: >
+    Process environment file read detected
+    (evt.type=%evt.type user=%user.name command=%proc.cmdline parent=%proc.pname
+    file=%fd.name container=%container.name image=%container.image.repository
+    k8s.ns=%k8s.ns.name pod=%k8s.pod.name)
+  priority: WARNING
+  tags: [container, env, secret, data_protection]
+
+- rule: Shell Spawned In Container
+  desc: Detect shell execution inside a container
+  condition: >
+    spawned_process and
+    container and
+    container_shell_process
+  output: >
+    Shell spawned in container
+    (evt.type=%evt.type user=%user.name command=%proc.cmdline parent=%proc.pname terminal=%proc.tty
+    container=%container.name image=%container.image.repository
+    k8s.ns=%k8s.ns.name pod=%k8s.pod.name)
+  priority: NOTICE
+  tags: [container, shell, runtime]
