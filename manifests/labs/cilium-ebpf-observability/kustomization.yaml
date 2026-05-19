@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: team-d
+
+resources:
+  - network-policy-baseline.yaml
+  - cilium-dns-fqdn-policy.yaml
+  - cilium-http-l7-policy.yaml
