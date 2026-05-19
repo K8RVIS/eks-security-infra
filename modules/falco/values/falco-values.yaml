@@ -1,0 +1,7 @@
+falco:
+  json_output: true
+  buffered_outputs: false
+  stdout_output:
+    enabled: true
+  syslog_output:
+    enabled: false
