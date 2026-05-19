@@ -21,7 +21,7 @@ private_subnet_cidrs = [
 ]
 
 cluster_private_endpoint_access_cidrs = [
-  "172.31.0.0/16","10.0.0.0/16"
+  "172.31.0.0/16", "10.0.0.0/16"
 ]
 
 vpn_vpc_id   = "vpc-096c2102f9e82e7e2"
@@ -49,3 +49,24 @@ node_group = {
 ecr_repository_names     = ["web", "api", "db"]
 ecr_max_image_count      = 10
 ecr_untagged_expiry_days = 7
+
+# Inspector triage: suppress findings for package ecosystems that each
+# service does not use. Only findings for packages the container actually
+# runs will remain ACTIVE and trigger alerts.
+triage_suppressions = {
+  # nginx 이미지 — PHP·Python·Java·Node.js 생태계 패키지는 실행되지 않음
+  web = {
+    reason        = "nginx 서비스와 무관한 패키지(PHP·Python·Java·Node.js) 취약점 억제"
+    package_names = ["php", "python", "java", "node", "npm", "ruby", "perl", "composer"]
+  }
+  # Go 바이너리(echo-server) — PHP·Java·Python·Ruby 생태계 패키지는 실행되지 않음
+  api = {
+    reason        = "Go 기반 echo-server 서비스와 무관한 패키지(PHP·Java·Python·Ruby) 취약점 억제"
+    package_names = ["php", "java", "python", "ruby", "perl", "composer", "gradle", "maven"]
+  }
+  # Redis — 애플리케이션 레이어 패키지(PHP·Java·Node.js·Python)는 실행되지 않음
+  db = {
+    reason        = "Redis 서비스와 무관한 애플리케이션 레이어 패키지 취약점 억제"
+    package_names = ["php", "java", "python", "node", "npm", "ruby", "perl", "composer"]
+  }
+}
