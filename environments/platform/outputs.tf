@@ -13,6 +13,11 @@ output "platform_state_ready" {
   value       = true
 }
 
+output "acm_dns_validation_record_names" {
+  description = "Cloudflare-managed ACM DNS validation record names."
+  value       = [for record in cloudflare_record.acm_dns_validation : record.name]
+}
+
 output "metrics_server_release_name" {
   description = "Helm release name for Metrics Server."
   value       = module.k8s_base.metrics_server_release_name
