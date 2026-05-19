@@ -147,3 +147,191 @@ resource "helm_release" "external_secrets" {
 
   depends_on = [helm_release.aws_load_balancer_controller]
 }
+
+# ============================================================
+# Seccomp Profiles — ConfigMap + DaemonSet Installer
+# ============================================================
+
+locals {
+  seccomp_web_profile = jsonencode({
+    defaultAction = "SCMP_ACT_ERRNO"
+    architectures = ["SCMP_ARCH_X86_64"]
+    syscalls = [{
+      action = "SCMP_ACT_ALLOW"
+      names = [
+        "accept4", "access", "arch_prctl", "bind", "brk", "capget", "capset",
+        "chdir", "clone", "close", "connect", "dup", "dup2", "dup3",
+        "epoll_create1", "epoll_ctl", "epoll_pwait", "epoll_wait",
+        "eventfd2", "execve", "exit", "exit_group", "faccessat",
+        "fcntl", "fstat", "fstatfs", "futex", "getcwd", "getdents64",
+        "getegid", "geteuid", "getgid", "getpid", "getppid",
+        "getrlimit", "getsockname", "getsockopt", "getuid",
+        "ioctl", "lseek", "listen", "lstat", "madvise", "mmap",
+        "mprotect", "munmap", "nanosleep", "newfstatat", "openat",
+        "pipe", "pipe2", "prctl", "pread64", "prlimit64", "pwrite64",
+        "read", "readv", "recvfrom", "recvmsg",
+        "rt_sigaction", "rt_sigprocmask", "rt_sigreturn", "rt_sigsuspend",
+        "sendfile", "sendmsg", "sendto", "setgid", "setgroups", "setuid",
+        "setsockopt", "sigaltstack", "socket", "socketpair",
+        "stat", "statfs", "sysinfo", "tgkill", "uname",
+        "wait4", "write", "writev",
+      ]
+    }]
+  })
+
+  seccomp_api_profile = jsonencode({
+    defaultAction = "SCMP_ACT_ERRNO"
+    architectures = ["SCMP_ARCH_X86_64"]
+    syscalls = [{
+      action = "SCMP_ACT_ALLOW"
+      names = [
+        "accept4", "arch_prctl", "bind", "brk", "capget", "capset",
+        "chdir", "clone", "close", "connect", "dup", "dup2", "dup3",
+        "epoll_create1", "epoll_ctl", "epoll_pwait", "epoll_wait",
+        "eventfd2", "execve", "exit", "exit_group",
+        "faccessat", "fallocate", "fcntl", "fdatasync",
+        "fstat", "fstatfs", "futex",
+        "getcwd", "getdents64", "getegid", "geteuid",
+        "getgid", "getpid", "getppid", "getrlimit",
+        "getsockname", "getsockopt", "getuid",
+        "ioctl", "kill", "lseek", "listen", "lstat",
+        "madvise", "memfd_create", "mincore", "mmap", "mprotect",
+        "munmap", "nanosleep", "newfstatat", "openat",
+        "pipe", "pipe2", "poll", "prctl", "pread64", "prlimit64", "pwrite64",
+        "read", "readlink", "readv", "recvfrom", "recvmsg",
+        "rt_sigaction", "rt_sigprocmask", "rt_sigreturn",
+        "rt_sigsuspend", "rt_sigtimedwait",
+        "sched_getaffinity", "sched_yield",
+        "sendmsg", "sendto", "setgid", "setgroups", "setuid",
+        "setsockopt", "sigaltstack", "socket",
+        "stat", "statfs", "statx", "sysinfo",
+        "tgkill", "uname", "unlink",
+        "wait4", "write", "writev",
+      ]
+    }]
+  })
+
+  seccomp_db_profile = jsonencode({
+    defaultAction = "SCMP_ACT_ERRNO"
+    architectures = ["SCMP_ARCH_X86_64"]
+    syscalls = [{
+      action = "SCMP_ACT_ALLOW"
+      names = [
+        "accept", "accept4", "arch_prctl", "bind", "brk",
+        "capget", "capset", "chdir", "clone", "close",
+        "connect", "dup", "dup2",
+        "epoll_create", "epoll_create1", "epoll_ctl",
+        "epoll_pwait", "epoll_wait", "eventfd2",
+        "execve", "exit", "exit_group",
+        "faccessat", "fcntl", "fdatasync",
+        "fstat", "fstatfs", "fsync", "ftruncate", "futex",
+        "getcwd", "getdents64", "getegid", "geteuid",
+        "getgid", "getpid", "getppid", "getrlimit",
+        "getsockname", "getsockopt", "getuid",
+        "ioctl", "lseek", "listen", "lstat",
+        "madvise", "mmap", "mprotect", "munmap",
+        "nanosleep", "newfstatat", "openat",
+        "pipe", "pipe2", "poll", "prctl",
+        "pread64", "prlimit64", "pwrite64",
+        "read", "readv", "recvfrom", "recvmsg",
+        "rename", "rt_sigaction", "rt_sigprocmask",
+        "rt_sigreturn", "rt_sigsuspend",
+        "select", "sendmsg", "sendto",
+        "setgid", "setgroups", "setuid",
+        "setsockopt", "sigaltstack", "socket",
+        "stat", "statfs", "sysinfo", "tgkill",
+        "uname", "unlink", "wait4",
+        "write", "writev",
+      ]
+    }]
+  })
+
+  seccomp_profiles_hash = sha256(join("", [
+    local.seccomp_web_profile,
+    local.seccomp_api_profile,
+    local.seccomp_db_profile,
+  ]))
+}
+
+resource "kubernetes_config_map" "seccomp_profiles" {
+  metadata {
+    name      = "seccomp-profiles"
+    namespace = "kube-system"
+  }
+
+  data = {
+    "web-nginx.json"       = local.seccomp_web_profile
+    "api-echo-server.json" = local.seccomp_api_profile
+    "db-redis.json"        = local.seccomp_db_profile
+  }
+}
+
+resource "kubernetes_daemon_set_v1" "seccomp_installer" {
+  metadata {
+    name      = "seccomp-installer"
+    namespace = "kube-system"
+    labels    = { app = "seccomp-installer" }
+  }
+
+  spec {
+    selector {
+      match_labels = { app = "seccomp-installer" }
+    }
+
+    template {
+      metadata {
+        labels      = { app = "seccomp-installer" }
+        annotations = { "profiles-hash" = local.seccomp_profiles_hash }
+      }
+
+      spec {
+        init_container {
+          name    = "installer"
+          image   = "busybox:1.36"
+          command = ["sh", "-c", "cp /profiles/*.json /host-seccomp/"]
+
+          volume_mount {
+            name       = "profiles"
+            mount_path = "/profiles"
+          }
+
+          volume_mount {
+            name       = "host-seccomp"
+            mount_path = "/host-seccomp"
+          }
+        }
+
+        container {
+          name  = "pause"
+          image = "registry.k8s.io/pause:3.10"
+
+          resources {
+            requests = { cpu = "1m", memory = "4Mi" }
+            limits   = { memory = "4Mi" }
+          }
+        }
+
+        volume {
+          name = "profiles"
+          config_map {
+            name = kubernetes_config_map.seccomp_profiles.metadata[0].name
+          }
+        }
+
+        volume {
+          name = "host-seccomp"
+          host_path {
+            path = "/var/lib/kubelet/seccomp"
+            type = "DirectoryOrCreate"
+          }
+        }
+
+        toleration {
+          operator = "Exists"
+        }
+      }
+    }
+  }
+
+  depends_on = [kubernetes_config_map.seccomp_profiles]
+}
